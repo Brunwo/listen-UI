@@ -1,0 +1,26 @@
+{
+    "name": "MP3 Player PWA",
+    "short_name": "MP3PWA",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#317EFB",
+    "icons": [
+      {
+        "src": "icons/imagepodcast.png",
+        "sizes": "1024x1024",
+        "type": "image/png"
+      },
+      {
+        "src": "/icons/imagepodcast-transp500.png",
+        "sizes": "500x500",
+        "type": "image/png"
+      },
+      {
+        "src": "/icons/imagepodcast-transp500-maskable.png",
+        "sizes": "500x500",
+        "type": "image/png",
+        "purpose": "maskable"
+      }
+    ]
+  }

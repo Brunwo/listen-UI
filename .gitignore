@@ -1,0 +1,6 @@
+.env
+*.report.html
+*.mp3
+pwa-report.json
+server.pem
+flagged/log.csv

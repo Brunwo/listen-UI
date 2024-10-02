@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", function() {
             url: link,
             // Add other necessary parameters here
             openai_api_key: 'your_api_key_here', // Be cautious with API keys in client-side code
-            text_model: 'o1-preview-2024-09-12',
+            text_model: 'gpt-4o-mini',
             audio_model: 'tts-1',
             speaker_1_voice: 'alloy',
             speaker_2_voice: 'echo',
@@ -75,4 +75,15 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
   
+  // JavaScript code to read URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
   
+  // Retrieve specific parameters
+  const name = urlParams.get('name'); // "John"
+  const age = urlParams.get('age');   // "30"
+
+  // Display the parameters in the output div
+  document.getElementById('shared-content').innerHTML = `
+      <p>Name: ${name}</p>
+      <p>Age: ${age}</p>
+  `;

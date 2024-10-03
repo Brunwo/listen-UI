@@ -22,5 +22,18 @@
         "type": "image/png",
         "purpose": "maskable"
       }
-    ]
+    ],
+
+    
+    "share_target": {
+      "action": "/shared-content-receiver/",
+      "method": "GET",
+      "params": {
+        "title": "name",
+        "text": "description",
+        "url": "link"
+      }
+    }
+    
+    
   }

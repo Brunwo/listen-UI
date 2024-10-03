@@ -6,15 +6,20 @@ document.addEventListener("DOMContentLoaded", function() {
     const saveSettingsBtn = document.getElementById('saveSettings');
     const apiKeyInput = document.getElementById('apiKey');
     const toggleApiKeyBtn = document.getElementById('toggleApiKey');
+    const apiServerInput = document.getElementById('apiServer');
 
     let originalApiKey = '';
+    let originalApiServer = '';
 
-    // Load saved API key on page load
+    // Load saved settings on page load
     const savedApiKey = localStorage.getItem('openaiApiKey');
+    const savedApiServer = localStorage.getItem('apiServer') || 'http://127.0.0.1:7860';
     if (savedApiKey) {
         apiKeyInput.value = savedApiKey;
         originalApiKey = savedApiKey;
     }
+    apiServerInput.value = savedApiServer;
+    originalApiServer = savedApiServer;
 
     // Toggle API key visibility
     toggleApiKeyBtn.onclick = function() {
@@ -30,6 +35,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Open settings modal
     settingsBtn.onclick = function() {
         originalApiKey = apiKeyInput.value;
+        originalApiServer = apiServerInput.value;
         settingsModal.style.display = "block";
         apiKeyInput.focus();
     }
@@ -63,13 +69,16 @@ document.addEventListener("DOMContentLoaded", function() {
     // Save settings
     function saveSettings() {
         const apiKey = apiKeyInput.value.trim();
-        if (apiKey) {
+        const apiServer = apiServerInput.value.trim();
+        if (apiKey && apiServer) {
             localStorage.setItem('openaiApiKey', apiKey);
-            originalApiKey = apiKey;  // Update original key
-            alert('API key saved successfully!');
+            localStorage.setItem('apiServer', apiServer);
+            originalApiKey = apiKey;
+            originalApiServer = apiServer;
+            alert('Settings saved successfully!');
             closeModal();
         } else {
-            alert('Please enter a valid API key.');
+            alert('Please enter both a valid API key and API server.');
         }
     }
 
@@ -79,38 +88,46 @@ document.addEventListener("DOMContentLoaded", function() {
     async function fetchMp3(link) {
         try {
             const apiKey = localStorage.getItem('openaiApiKey');
+            const apiServer = localStorage.getItem('apiServer');
             if (!apiKey) {
                 throw new Error("API key not set. Please set your OpenAI API key in the settings.");
             }
+            if (!apiServer) {
+                throw new Error("API server not set. Please set the API server in the settings.");
+            }
 
-            const response = await fetch('/api/generate-audio', {
+            const response = await fetch(`${apiServer}/api/predict`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    url: link,
-                    // Use the saved API key
-                    openai_api_key: apiKey,
-                    text_model: 'gpt-4o-mini',
-                    audio_model: 'tts-1',
-                    speaker_1_voice: 'alloy',
-                    speaker_2_voice: 'echo',
-                    // ... other parameters ...
+                    data: [
+                        link,
+                        apiKey,
+                        "gpt-4o-mini",
+                        "tts-1",
+                        "alloy",
+                        "echo",
+                        null, // api_base
+                        "", // edited_transcript
+                        "", // user_feedback
+                        "summary" // original_text
+                    ]
                 }),
             });
 
             if (!response.ok) {
-                throw new Error("Network response was not ok");
-            }
-  
-            const data = await response.json();
-            if (data.error) {
-                throw new Error(data.error);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
+            const result = await response.json();
+
+            // Assuming the audio file URL is the first item in the result
+            const audioFileUrl = result.data[0];
+
             // Set the audio player source
-            audioPlayer.src = data.audio_file;
+            audioPlayer.src = audioFileUrl;
             audioPlayer.play();
         } catch (error) {
             console.error('Error fetching MP3:', error);

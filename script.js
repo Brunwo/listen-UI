@@ -1,3 +1,5 @@
+ import { Client } from "@gradio/client";
+
 document.addEventListener("DOMContentLoaded", function() {
     const audioPlayer = document.getElementById('player');
     const settingsBtn = document.getElementById('settingsBtn');
@@ -86,9 +88,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Function to fetch MP3 from API endpoint when a link is shared
     async function fetchMp3(link) {
+        console.log('Starting fetchMp3 function with link:', link);
         try {
             const apiKey = localStorage.getItem('openaiApiKey');
             const apiServer = localStorage.getItem('apiServer');
+            console.log('Retrieved API key and server from localStorage');
+            console.log('API Server:', apiServer);
+
             if (!apiKey) {
                 throw new Error("API key not set. Please set your OpenAI API key in the settings.");
             }
@@ -96,51 +102,64 @@ document.addEventListener("DOMContentLoaded", function() {
                 throw new Error("API server not set. Please set the API server in the settings.");
             }
 
-            const response = await fetch(`${apiServer}/api/predict`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    data: [
-                        link,
-                        apiKey,
-                        "gpt-4o-mini",
-                        "tts-1",
-                        "alloy",
-                        "echo",
-                        null, // api_base
-                        "", // edited_transcript
-                        "", // user_feedback
-                        "summary" // original_text
-                    ]
-                }),
-            });
+            console.log('Attempting to connect to Gradio app...');
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            // Connect to local Gradio app 
+            const client = await Client.connect(apiServer);
 
-            const result = await response.json();
+            //connect to HF deployed one OK
+            //const client = await Client.connect("Mightypeacock/webtoaudio");
+
+            console.log('Gradio client created successfully');
+            
+            console.log(await client.view_api())
+
+            console.log('Preparing to make prediction...');
+            // Make the prediction
+
+            const result = await client.predict("/generate_audio", { 
+              url:link,
+              openai_api_key: apiKey,
+              text_model:  "gpt-4o-mini",
+              audio_model:  "tts-1",
+              speaker_1_voice:   "alloy",
+              speaker_2_voice:  "echo",
+              api_base: null, // api_base
+              edited_transcript: "", // edited_transcript
+              user_feedback:  "", // user_feedback
+              original_text: "summary" // original_text
+              // debug: true, 
+        });
+
+        console.log(result.data);
+
+
+            console.log('Prediction made successfully');
 
             // Assuming the audio file URL is the first item in the result
             const audioFileUrl = result.data[0];
+            console.log('Received audio file URL:', audioFileUrl);
 
             // Set the audio player source
             audioPlayer.src = audioFileUrl;
             audioPlayer.play();
+            console.log('Audio playback started');
         } catch (error) {
-            console.error('Error fetching MP3:', error);
-            alert(error.message);
+            console.error('Error in fetchMp3:', error);
+            console.error('Error stack:', error.stack);
+            alert(`Error fetching MP3: ${error.message}`);
         }
     }
   
     // Get the link from the shared URL
     const queryParams = new URLSearchParams(window.location.search);
     const sharedLink = queryParams.get('url');
-    
+
+    console.log('Shared link from URL:', sharedLink);
+
     // Only call the API to get MP3 if a valid URL is provided
     if (sharedLink) {
+        console.log('Valid URL provided, calling fetchMp3');
         fetchMp3(sharedLink);
     } else {
         console.log("No URL provided. Waiting for user input.");

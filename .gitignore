@@ -7,3 +7,4 @@ flagged/log.csv
 .aider*
 locales/fr/LC_MESSAGES/messages.mo
 locales/en/LC_MESSAGES/messages.mo
+node_modules/

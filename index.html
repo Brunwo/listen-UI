@@ -13,8 +13,17 @@
   <h1>web to podcast player</h1>
   <audio id="player" controls></audio>
   
+  <!-- Add play button -->
+  <button id="playButton" style="display: none;">Play</button>
+
   <!-- Add settings button -->
   <button id="settingsBtn">Settings</button>
+
+  <!-- Add transcription container -->
+  <div id="transcriptionContainer" style="display: none;">
+    <h2>Transcription:</h2>
+    <p id="transcription"></p>
+  </div>
 
   <!-- Add settings modal -->
   <div id="settingsModal" class="modal">
@@ -31,7 +40,7 @@
       <button id="saveSettings">Save</button>
     </div>
   </div>
-
+  <div id="loadingIndicator" style="display: none;">Loading audio...</div>
 
   <script type="module" src="script.js"></script>
   <!-- <script src="/script.js"></script> -->

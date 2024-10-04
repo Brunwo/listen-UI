@@ -1,5 +1,6 @@
  import { Client } from "@gradio/client";
 
+
 document.addEventListener("DOMContentLoaded", function() {
     const audioPlayer = document.getElementById('player');
     const settingsBtn = document.getElementById('settingsBtn');
@@ -89,6 +90,15 @@ document.addEventListener("DOMContentLoaded", function() {
     // Function to fetch MP3 from API endpoint when a link is shared
     async function fetchMp3(link) {
         console.log('Starting fetchMp3 function with link:', link);
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const audioPlayer = document.getElementById('player');
+        const playButton = document.getElementById('playButton');
+        const transcriptionContainer = document.getElementById('transcriptionContainer');
+        const transcriptionElement = document.getElementById('transcription');
+
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        if (transcriptionContainer) transcriptionContainer.style.display = 'none';
+
         try {
             const apiKey = localStorage.getItem('openaiApiKey');
             const apiServer = localStorage.getItem('apiServer');
@@ -113,7 +123,7 @@ document.addEventListener("DOMContentLoaded", function() {
             console.log('Gradio client created successfully');
             
             console.log(await client.view_api())
-
+         
             console.log('Preparing to make prediction...');
             // Make the prediction
 
@@ -131,26 +141,68 @@ document.addEventListener("DOMContentLoaded", function() {
               // debug: true, 
         });
 
-        console.log(result.data);
+
+        console.log('Raw result from predict:', result);
+        console.log('Result data:', result.data);
 
 
-            console.log('Prediction made successfully');
+        console.log('Prediction made successfully');
 
-            // Assuming the audio file URL is the first item in the result
-            const audioFileUrl = result.data[0];
-            console.log('Received audio file URL:', audioFileUrl);
-
-            // Set the audio player source
-            audioPlayer.src = audioFileUrl;
-            audioPlayer.play();
-            console.log('Audio playback started');
-        } catch (error) {
-            console.error('Error in fetchMp3:', error);
-            console.error('Error stack:', error.stack);
-            alert(`Error fetching MP3: ${error.message}`);
+        // Check if result.data is an array and has at least one element
+        if (!Array.isArray(result.data) || result.data.length === 0) {
+            throw new Error('Unexpected result format from server');
         }
+
+        // Assuming the audio file URL is the second item in the result
+        const audioFileUrl = result.data[0].url;
+        console.log('Received audio file URL:', audioFileUrl);
+
+        // Check if the URL is valid
+        if (typeof audioFileUrl !== 'string' || !audioFileUrl.startsWith('http')) {
+            throw new Error(`Invalid audio file URL received: ${audioFileUrl}`);
+        }
+
+        // Set the audio player source
+        if (audioPlayer) {
+            audioPlayer.src = audioFileUrl;
+        } else {
+            throw new Error('Audio player element not found');
+        }
+
+        // Show play button
+        if (playButton) {
+            playButton.style.display = 'block';
+            playButton.onclick = () => audioPlayer.play();
+        } else {
+            console.warn('Play button not found, audio controls will be used instead');
+        }
+
+        // Display the transcription
+        if (transcriptionElement && transcriptionContainer) {
+            const transcription = result.data[1];
+            transcriptionElement.textContent = transcription;
+            transcriptionContainer.style.display = 'block';
+        } else {
+            console.warn('Transcription elements not found');
+        }
+
+        console.log('Audio ready for playback and transcription displayed');
+
+    } catch (error) {
+        console.error('Error in fetchMp3:', error);
+        console.error('Error stack:', error.stack);
+        alert(`Error fetching MP3: ${error.message}`);
+        
+        // Clear the audio player source and hide the play button
+        if (audioPlayer) audioPlayer.src = '';
+        if (playButton) playButton.style.display = 'none';
+        if (transcriptionContainer) transcriptionContainer.style.display = 'none';
+    } finally {
+        if (loadingIndicator) 
+            loadingIndicator.style.display = 'none';
     }
-  
+    }
+
     // Get the link from the shared URL
     const queryParams = new URLSearchParams(window.location.search);
     const sharedLink = queryParams.get('url');
@@ -194,16 +246,3 @@ if ('mediaSession' in navigator) {
         audioPlayer.currentTime = Math.min(audioPlayer.currentTime + 10, audioPlayer.duration);
     });
 }
-
-// JavaScript code to read URL parameters
-const urlParams = new URLSearchParams(window.location.search);
-  
-// Retrieve specific parameters
-const name = urlParams.get('name'); // "John"
-const age = urlParams.get('age');   // "30"
-
-// Display the parameters in the output div
-document.getElementById('shared-content').innerHTML = `
-    <p>Name: ${name}</p>
-    <p>Age: ${age}</p>
-`;

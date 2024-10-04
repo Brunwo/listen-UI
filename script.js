@@ -1,8 +1,11 @@
- import { Client } from "@gradio/client";
-
+import { Client } from "@gradio/client";
 
 document.addEventListener("DOMContentLoaded", function() {
     const audioPlayer = document.getElementById('player');
+    const playButton = document.getElementById('playButton');
+    const skipBackwardButton = document.getElementById('skipBackward');
+    const skipForwardButton = document.getElementById('skipForward');
+  
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsModal = document.getElementById('settingsModal');
     const closeBtn = document.querySelector('.close');
@@ -10,6 +13,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const apiKeyInput = document.getElementById('apiKey');
     const toggleApiKeyBtn = document.getElementById('toggleApiKey');
     const apiServerInput = document.getElementById('apiServer');
+
 
     let originalApiKey = '';
     let originalApiServer = '';
@@ -232,10 +236,12 @@ if ('mediaSession' in navigator) {
   
     navigator.mediaSession.setActionHandler('play', function() {
         audioPlayer.play();
+        playButton.textContent = 'Pause';
     });
     
     navigator.mediaSession.setActionHandler('pause', function() {
         audioPlayer.pause();
+        playButton.textContent = 'Play';
     });
   
     navigator.mediaSession.setActionHandler('seekbackward', function() {

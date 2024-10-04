@@ -11,10 +11,16 @@
 </head>
 <body>
   <h1>web to podcast player</h1>
-  <audio id="player" controls></audio>
   
-  <!-- Add play button -->
-  <button id="playButton" style="display: none;">Play</button>
+  <!-- Add audio controls container -->
+  <div id="audioControls">
+    <audio id="player" controls></audio>
+    <div id="controlButtons">
+      <button id="skipBackward">-10s</button>
+      <button id="playButton" style="display: none;">Play</button>
+      <button id="skipForward">+10s</button>
+    </div>
+  </div>
 
   <!-- Add settings button -->
   <button id="settingsBtn">Settings</button>

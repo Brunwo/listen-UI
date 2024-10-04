@@ -1,6 +1,10 @@
 import { Client } from "@gradio/client";
 
-document.addEventListener("DOMContentLoaded", function() {
+// Add these variables at the top of the file
+let audioCache = {};
+let currentTrack = null;
+
+document.addEventListener("DOMContentLoaded", async function() {
     const audioPlayer = document.getElementById('player');
     const playButton = document.getElementById('playButton');
     const skipBackwardButton = document.getElementById('skipBackward');
@@ -91,6 +95,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
     saveSettingsBtn.onclick = saveSettings;
 
+    const historyList = document.getElementById('historyList');
+    const clearHistoryBtn = document.getElementById('clearHistory');
+
+    // Load audio cache from localStorage and Cache API
+    await loadAudioCache();
+
+    // Update history list
+    updateHistoryList();
+
     // Function to fetch MP3 from API endpoint when a link is shared
     async function fetchMp3(link) {
         console.log('Starting fetchMp3 function with link:', link);
@@ -104,6 +117,13 @@ document.addEventListener("DOMContentLoaded", function() {
         if (transcriptionContainer) transcriptionContainer.style.display = 'none';
 
         try {
+            // Check if the link is already in the cache
+            if (audioCache[link]) {
+                console.log('Loading audio from cache');
+                await loadAudioFromCache(link);
+                return;
+            }
+
             const apiKey = localStorage.getItem('openaiApiKey');
             const apiServer = localStorage.getItem('apiServer');
             console.log('Retrieved API key and server from localStorage');
@@ -166,31 +186,16 @@ document.addEventListener("DOMContentLoaded", function() {
             throw new Error(`Invalid audio file URL received: ${audioFileUrl}`);
         }
 
-        // Set the audio player source
-        if (audioPlayer) {
-            audioPlayer.src = audioFileUrl;
-        } else {
-            throw new Error('Audio player element not found');
-        }
+        // After successful API call, add to cache
+        audioCache[link] = {
+            audioUrl: audioFileUrl,
+            transcription: result.data[1],
+            lastPosition: 0
+        };
+        await saveAudioCache(link, audioFileUrl);
+        updateHistoryList();
 
-        // Show play button
-        if (playButton) {
-            playButton.style.display = 'block';
-            playButton.onclick = () => audioPlayer.play();
-        } else {
-            console.warn('Play button not found, audio controls will be used instead');
-        }
-
-        // Display the transcription
-        if (transcriptionElement && transcriptionContainer) {
-            const transcription = result.data[1];
-            transcriptionElement.textContent = transcription;
-            transcriptionContainer.style.display = 'block';
-        } else {
-            console.warn('Transcription elements not found');
-        }
-
-        console.log('Audio ready for playback and transcription displayed');
+        await loadAudioFromCache(link);
 
     } catch (error) {
         console.error('Error in fetchMp3:', error);
@@ -206,6 +211,113 @@ document.addEventListener("DOMContentLoaded", function() {
             loadingIndicator.style.display = 'none';
     }
     }
+
+    async function loadAudioFromCache(link) {
+        const cachedAudio = audioCache[link];
+        if (!cachedAudio) return;
+
+        const audioPlayer = document.getElementById('player');
+        const playButton = document.getElementById('playButton');
+        const transcriptionContainer = document.getElementById('transcriptionContainer');
+        const transcriptionElement = document.getElementById('transcription');
+
+        // Fetch the audio file from the Cache API
+        const cache = await caches.open('audio-cache');
+        const response = await cache.match(cachedAudio.audioUrl);
+        if (response) {
+            const blob = await response.blob();
+            audioPlayer.src = URL.createObjectURL(blob);
+        } else {
+            audioPlayer.src = cachedAudio.audioUrl;
+        }
+
+        audioPlayer.currentTime = cachedAudio.lastPosition;
+        currentTrack = link;
+
+        if (playButton) {
+            playButton.style.display = 'block';
+            playButton.onclick = () => audioPlayer.play();
+        }
+
+        if (transcriptionElement && transcriptionContainer) {
+            transcriptionElement.textContent = cachedAudio.transcription;
+            transcriptionContainer.style.display = 'block';
+        }
+
+        console.log('Audio loaded from cache and ready for playback');
+    }
+
+    async function saveAudioCache(link, audioUrl) {
+        // Save metadata to localStorage
+        localStorage.setItem('audioCache', JSON.stringify(audioCache));
+
+        // Save audio file to Cache API
+        const cache = await caches.open('audio-cache');
+        await cache.add(audioUrl);
+    }
+
+    async function loadAudioCache() {
+        const savedCache = localStorage.getItem('audioCache');
+        if (savedCache) {
+            audioCache = JSON.parse(savedCache);
+        }
+
+        // Verify that all cached audio files are still in the Cache API
+        const cache = await caches.open('audio-cache');
+        for (const link in audioCache) {
+            const response = await cache.match(audioCache[link].audioUrl);
+            if (!response) {
+                console.log(`Audio file for ${link} not found in cache, removing entry`);
+                delete audioCache[link];
+            }
+        }
+
+        // Save the cleaned-up cache back to localStorage
+        localStorage.setItem('audioCache', JSON.stringify(audioCache));
+    }
+
+    async function updateHistoryList() {
+        historyList.innerHTML = '';
+        Object.keys(audioCache).forEach(link => {
+            const li = document.createElement('li');
+            const playBtn = document.createElement('button');
+            playBtn.textContent = 'Play';
+            playBtn.onclick = () => loadAudioFromCache(link);
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.onclick = () => removeFromCache(link);
+            li.appendChild(document.createTextNode(link + ' '));
+            li.appendChild(playBtn);
+            li.appendChild(removeBtn);
+            historyList.appendChild(li);
+        });
+    }
+
+    async function removeFromCache(link) {
+        const cache = await caches.open('audio-cache');
+        await cache.delete(audioCache[link].audioUrl);
+        delete audioCache[link];
+        localStorage.setItem('audioCache', JSON.stringify(audioCache));
+        updateHistoryList();
+    }
+
+    clearHistoryBtn.onclick = async function() {
+        const cache = await caches.open('audio-cache');
+        for (const link in audioCache) {
+            await cache.delete(audioCache[link].audioUrl);
+        }
+        audioCache = {};
+        localStorage.setItem('audioCache', JSON.stringify(audioCache));
+        updateHistoryList();
+    };
+
+    // Save current position every 5 seconds
+    setInterval(() => {
+        if (currentTrack && audioPlayer.currentTime > 0) {
+            audioCache[currentTrack].lastPosition = audioPlayer.currentTime;
+            localStorage.setItem('audioCache', JSON.stringify(audioCache));
+        }
+    }, 5000);
 
     // Get the link from the shared URL
     const queryParams = new URLSearchParams(window.location.search);

@@ -4,6 +4,17 @@ import { Client } from "@gradio/client";
 let audioCache = {};
 let currentTrack = null;
 
+// // Add this function at the beginning of your script.js file
+// function handleSharedUrl() {
+//   const urlParams = new URLSearchParams(window.location.search);
+//   const sharedUrl = urlParams.get('url');
+
+//   if (sharedUrl) {
+//     console.log('Shared URL detected:', sharedUrl);
+//     fetchMp3(sharedUrl);
+//   }
+// }
+
 document.addEventListener("DOMContentLoaded", async function() {
     const audioPlayer = document.getElementById('player');
     const playButton = document.getElementById('playButton');
@@ -197,6 +208,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 
         await loadAudioFromCache(link);
 
+        // Update media session metadata
+        updateMediaSessionMetadata(link, 'Web to Audio', 'Generated Audio');
+
     } catch (error) {
         console.error('Error in fetchMp3:', error);
         console.error('Error stack:', error.stack);
@@ -245,6 +259,9 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
 
         console.log('Audio loaded from cache and ready for playback');
+
+        // Update media session metadata
+        updateMediaSessionMetadata(link, 'Web to Audio', 'Generated Audio');
     }
 
     async function saveAudioCache(link, audioUrl) {
@@ -319,6 +336,9 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     }, 5000);
 
+    // Call handleSharedUrl instead of directly checking for the URL parameter
+    // handleSharedUrl();
+
     // Get the link from the shared URL
     const queryParams = new URLSearchParams(window.location.search);
     const sharedLink = queryParams.get('url');
@@ -333,34 +353,59 @@ document.addEventListener("DOMContentLoaded", async function() {
         console.log("No URL provided. Waiting for user input.");
         // You might want to update the UI here to indicate that the user needs to provide a URL
     }
-});
 
-if ('mediaSession' in navigator) {
-    navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Sample MP3',
-        artist: 'Unknown Artist',
-        album: 'Demo Album',
-        artwork: [
-            { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-            { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' }
-        ]
-    });
-  
-    navigator.mediaSession.setActionHandler('play', function() {
-        audioPlayer.play();
-        playButton.textContent = 'Pause';
-    });
-    
-    navigator.mediaSession.setActionHandler('pause', function() {
-        audioPlayer.pause();
-        playButton.textContent = 'Play';
-    });
-  
-    navigator.mediaSession.setActionHandler('seekbackward', function() {
-        audioPlayer.currentTime = Math.max(audioPlayer.currentTime - 10, 0);
-    });
-  
-    navigator.mediaSession.setActionHandler('seekforward', function() {
-        audioPlayer.currentTime = Math.min(audioPlayer.currentTime + 10, audioPlayer.duration);
-    });
-}
+    // Add this function to update media session metadata
+    function updateMediaSessionMetadata(title, artist, album) {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: title || 'Unknown Title',
+                artist: artist || 'Unknown Artist',
+                album: album || 'Unknown Album',
+                artwork: [
+                    { src: '/icons/imagepodcast-transp500.png', sizes: '500x500', type: 'image/png' },
+                    { src: '/icons/imagepodcast.png', sizes: '1024x1024', type: 'image/png' }
+                ]
+            });
+        }
+    }
+
+    // Add this function to set up media session handlers
+    function setupMediaSessionHandlers() {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', () => {
+                audioPlayer.play();
+                playButton.textContent = 'Pause';
+            });
+            
+            navigator.mediaSession.setActionHandler('pause', () => {
+                audioPlayer.pause();
+                playButton.textContent = 'Play';
+            });
+            
+            navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+                const skipTime = details.seekOffset || 10;
+                audioPlayer.currentTime = Math.max(audioPlayer.currentTime - skipTime, 0);
+            });
+            
+            navigator.mediaSession.setActionHandler('seekforward', (details) => {
+                const skipTime = details.seekOffset || 10;
+                audioPlayer.currentTime = Math.min(audioPlayer.currentTime + skipTime, audioPlayer.duration);
+            });
+            
+            navigator.mediaSession.setActionHandler('seekto', (details) => {
+                if (details.fastSeek && 'fastSeek' in audioPlayer) {
+                    audioPlayer.fastSeek(details.seekTime);
+                    return;
+                }
+                audioPlayer.currentTime = details.seekTime;
+            });
+            
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                audioPlayer.currentTime = 0;
+            });
+        }
+    }
+
+    // Call this function to set up the media session handlers
+    setupMediaSessionHandlers();
+});

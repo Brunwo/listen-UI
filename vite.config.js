@@ -6,4 +6,5 @@ export default defineConfig({
   build: {
     outDir: 'dist',  // The output directory for bundled files
   },
+  base : '/listen-UI/'
 });

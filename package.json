@@ -1,0 +1,18 @@
+{
+  "name": "webtoaudio",
+  "version": "1.0.0",
+  "description": "--- title: Webtoaudio emoji: 🔥 colorFrom: green colorTo: indigo sdk: gradio sdk_version: 4.44.0 app_file: app.py pinned: false license: mit ---",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "vite": "^5.4.8"
+  },
+  "devDependencies": {
+    "@gradio/client": "^1.6.0-beta.3"
+  }
+}

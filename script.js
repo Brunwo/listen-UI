@@ -4,6 +4,9 @@ import { Client } from "@gradio/client";
 let audioCache = {};
 let currentTrack = null;
 
+// Add this constant at the top of the file
+const DEFAULT_API_SERVER = "Mightypeacock/webtoaudio";
+
 // // Add this function at the beginning of your script.js file
 // function handleSharedUrl() {
 //   const urlParams = new URLSearchParams(window.location.search);
@@ -35,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     // Load saved settings on page load
     const savedApiKey = localStorage.getItem('openaiApiKey');
-    const savedApiServer = localStorage.getItem('apiServer') || 'http://127.0.0.1:7860';
+    const savedApiServer = localStorage.getItem('apiServer') || DEFAULT_API_SERVER;
     if (savedApiKey) {
         apiKeyInput.value = savedApiKey;
         originalApiKey = savedApiKey;
@@ -136,24 +139,18 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
 
             const apiKey = localStorage.getItem('openaiApiKey');
-            const apiServer = localStorage.getItem('apiServer');
+            const apiServer = localStorage.getItem('apiServer') || DEFAULT_API_SERVER;
             console.log('Retrieved API key and server from localStorage');
             console.log('API Server:', apiServer);
 
             if (!apiKey) {
                 throw new Error("API key not set. Please set your OpenAI API key in the settings.");
             }
-            if (!apiServer) {
-                throw new Error("API server not set. Please set the API server in the settings.");
-            }
 
             console.log('Attempting to connect to Gradio app...');
 
-            // Connect to local Gradio app 
+            // Connect to Gradio app using the apiServer value
             const client = await Client.connect(apiServer);
-
-            //connect to HF deployed one OK
-            //const client = await Client.connect("Mightypeacock/webtoaudio");
 
             console.log('Gradio client created successfully');
             

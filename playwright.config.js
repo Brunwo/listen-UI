@@ -3,7 +3,7 @@ const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './e2e',
   use: {
-    baseURL: 'http://localhost:3000/listen-UI/',
+    baseURL: 'http://localhost:5173/listen-UI/',
   },
   webServer: {
     command: 'npm run dev',

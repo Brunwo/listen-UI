@@ -1,5 +1,5 @@
 // This function will be called when the PWA receives a share
-export function handleShareTarget() {
+function handleShareTarget() {
   const urlParams = new URLSearchParams(window.location.search);
   const sharedUrl = urlParams.get('url') || urlParams.get('text');
 
@@ -12,7 +12,7 @@ export function handleShareTarget() {
   }
 }
 
-// Call the function when the page loads
-if (typeof window !== 'undefined') {
+// // Call the function when the page loads
+// if (typeof window !== 'undefined') {
   handleShareTarget();
-}
+// }

@@ -8,7 +8,8 @@
     "build": "vite build",   
     "serve": "vite preview",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -18,8 +19,12 @@
   },
   "devDependencies": {
     "vite": "^5.4.8",
-    "vitest": "^0.34.0",
+    "vitest": "^0.29.8",
     "jsdom": "^22.1.0",
-    "@playwright/test": "^1.35.0"
+    "@playwright/test": "^1.32.0",
+    "@types/node": "^18.15.11",
+    "typescript": "^5.0.3"
   }
 }
+
+

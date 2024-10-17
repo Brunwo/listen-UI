@@ -1,22 +1,7 @@
-import { Client } from "@gradio/client";
-
-// Add these variables at the top of the file
-let audioCache = {};
-let currentTrack = null;
-
-// Add this constant at the top of the file
-const DEFAULT_API_SERVER = "Mightypeacock/webtoaudio";
-
-// // Add this function at the beginning of your script.js file
-// function handleSharedUrl() {
-//   const urlParams = new URLSearchParams(window.location.search);
-//   const sharedUrl = urlParams.get('url');
-
-//   if (sharedUrl) {
-//     console.log('Shared URL detected:', sharedUrl);
-//     fetchMp3(sharedUrl);
-//   }
-// }
+import { audioCache, loadAudioCache, removeFromCache, clearAudioCache } from './src/audioCache.js';
+import { loadAudioFromCache, setupMediaSessionHandlers } from './src/audioPlayer.js';
+import { fetchMp3 } from './src/api.js';
+import { checkOnlineStatus, handleSharedUrl } from './src/utils.js';
 
 document.addEventListener("DOMContentLoaded", async function() {
     const audioPlayer = document.getElementById('player');
@@ -32,11 +17,24 @@ document.addEventListener("DOMContentLoaded", async function() {
     const toggleApiKeyBtn = document.getElementById('toggleApiKey');
     const apiServerInput = document.getElementById('apiServer');
 
+    const historyList = document.getElementById('historyList');
+    const clearHistoryBtn = document.getElementById('clearHistory');
 
     let originalApiKey = '';
     let originalApiServer = '';
 
-    // Load saved settings on page load
+    //checkOnlineStatus();
+
+    // window.addEventListener('online', () => {
+    //     alert('You are back online!');
+    //     updateHistoryList();
+    // });
+
+    // window.addEventListener('offline', () => {
+    //     alert('You are offline. Some features may be limited.');
+    // });
+
+    // Load saved settings
     const savedApiKey = localStorage.getItem('openaiApiKey');
     const savedApiServer = localStorage.getItem('apiServer') || DEFAULT_API_SERVER;
     if (savedApiKey) {
@@ -57,7 +55,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     }
 
-    // Open settings modal
+    // Settings modal functionality
     settingsBtn.onclick = function() {
         originalApiKey = apiKeyInput.value;
         originalApiServer = apiServerInput.value;
@@ -65,22 +63,19 @@ document.addEventListener("DOMContentLoaded", async function() {
         apiKeyInput.focus();
     }
 
-    // Close settings modal
     function closeModal() {
         settingsModal.style.display = "none";
-        apiKeyInput.value = originalApiKey;  // Revert to original value
+        apiKeyInput.value = originalApiKey;
     }
 
     closeBtn.onclick = closeModal;
 
-    // Close modal if clicked outside
     window.onclick = function(event) {
         if (event.target == settingsModal) {
             closeModal();
         }
     }
 
-    // Handle keydown events
     document.addEventListener('keydown', function(event) {
         if (settingsModal.style.display === "block") {
             if (event.key === "Escape") {
@@ -91,7 +86,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     });
 
-    // Save settings
     function saveSettings() {
         const apiKey = apiKeyInput.value.trim();
         const apiServer = apiServerInput.value.trim();
@@ -109,188 +103,11 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     saveSettingsBtn.onclick = saveSettings;
 
-    const historyList = document.getElementById('historyList');
-    const clearHistoryBtn = document.getElementById('clearHistory');
-
-    // Load audio cache from localStorage and Cache API
+    // Load audio cache and update history list
     await loadAudioCache();
-
-    // Update history list
     updateHistoryList();
 
-    // Function to fetch MP3 from API endpoint when a link is shared
-    async function fetchMp3(link) {
-        console.log('Starting fetchMp3 function with link:', link);
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const audioPlayer = document.getElementById('player');
-        const playButton = document.getElementById('playButton');
-        const transcriptionContainer = document.getElementById('transcriptionContainer');
-        const transcriptionElement = document.getElementById('transcription');
-
-        if (loadingIndicator) loadingIndicator.style.display = 'block';
-        if (transcriptionContainer) transcriptionContainer.style.display = 'none';
-
-        try {
-            // Check if the link is already in the cache
-            if (audioCache[link]) {
-                console.log('Loading audio from cache');
-                await loadAudioFromCache(link);
-                return;
-            }
-
-            const apiKey = localStorage.getItem('openaiApiKey');
-            const apiServer = localStorage.getItem('apiServer') || DEFAULT_API_SERVER;
-            console.log('Retrieved API key and server from localStorage');
-            console.log('API Server:', apiServer);
-
-            if (!apiKey) {
-                throw new Error("API key not set. Please set your OpenAI API key in the settings.");
-            }
-
-            console.log('Attempting to connect to Gradio app...');
-
-            // Connect to Gradio app using the apiServer value
-            const client = await Client.connect(apiServer);
-
-            console.log('Gradio client created successfully');
-            
-            console.log(await client.view_api())
-         
-            console.log('Preparing to make prediction...');
-            // Make the prediction
-
-            const result = await client.predict("/generate_audio", { 
-              url:link,
-              openai_api_key: apiKey,
-              text_model:  "gpt-4o-mini",
-              audio_model:  "tts-1",
-              speaker_1_voice:   "alloy",
-              speaker_2_voice:  "echo",
-              api_base: null, // api_base
-              edited_transcript: "", // edited_transcript
-              user_feedback:  "", // user_feedback
-              original_text: "summary" // original_text
-              // debug: true, 
-        });
-
-
-        console.log('Raw result from predict:', result);
-        console.log('Result data:', result.data);
-
-
-        console.log('Prediction made successfully');
-
-        // Check if result.data is an array and has at least one element
-        if (!Array.isArray(result.data) || result.data.length === 0) {
-            throw new Error('Unexpected result format from server');
-        }
-
-        // Assuming the audio file URL is the second item in the result
-        const audioFileUrl = result.data[0].url;
-        console.log('Received audio file URL:', audioFileUrl);
-
-        // Check if the URL is valid
-        if (typeof audioFileUrl !== 'string' || !audioFileUrl.startsWith('http')) {
-            throw new Error(`Invalid audio file URL received: ${audioFileUrl}`);
-        }
-
-        // After successful API call, add to cache
-        audioCache[link] = {
-            audioUrl: audioFileUrl,
-            transcription: result.data[1],
-            lastPosition: 0
-        };
-        await saveAudioCache(link, audioFileUrl);
-        updateHistoryList();
-
-        await loadAudioFromCache(link);
-
-        // Update media session metadata
-        updateMediaSessionMetadata(link, 'Web to Audio', 'Generated Audio');
-
-    } catch (error) {
-        console.error('Error in fetchMp3:', error);
-        console.error('Error stack:', error.stack);
-        alert(`Error fetching MP3: ${error.message}`);
-        
-        // Clear the audio player source and hide the play button
-        if (audioPlayer) audioPlayer.src = '';
-        if (playButton) playButton.style.display = 'none';
-        if (transcriptionContainer) transcriptionContainer.style.display = 'none';
-    } finally {
-        if (loadingIndicator) 
-            loadingIndicator.style.display = 'none';
-    }
-    }
-
-    async function loadAudioFromCache(link) {
-        const cachedAudio = audioCache[link];
-        if (!cachedAudio) return;
-
-        const audioPlayer = document.getElementById('player');
-        const playButton = document.getElementById('playButton');
-        const transcriptionContainer = document.getElementById('transcriptionContainer');
-        const transcriptionElement = document.getElementById('transcription');
-
-        // Fetch the audio file from the Cache API
-        const cache = await caches.open('audio-cache');
-        const response = await cache.match(cachedAudio.audioUrl);
-        if (response) {
-            const blob = await response.blob();
-            audioPlayer.src = URL.createObjectURL(blob);
-        } else {
-            audioPlayer.src = cachedAudio.audioUrl;
-        }
-
-        audioPlayer.currentTime = cachedAudio.lastPosition;
-        currentTrack = link;
-
-        if (playButton) {
-            playButton.style.display = 'block';
-            playButton.onclick = () => audioPlayer.play();
-        }
-
-        if (transcriptionElement && transcriptionContainer) {
-            transcriptionElement.textContent = cachedAudio.transcription;
-            transcriptionContainer.style.display = 'block';
-        }
-
-        console.log('Audio loaded from cache and ready for playback');
-
-        // Update media session metadata
-        updateMediaSessionMetadata(link, 'Web to Audio', 'Generated Audio');
-    }
-
-    async function saveAudioCache(link, audioUrl) {
-        // Save metadata to localStorage
-        localStorage.setItem('audioCache', JSON.stringify(audioCache));
-
-        // Save audio file to Cache API
-        const cache = await caches.open('audio-cache');
-        await cache.add(audioUrl);
-    }
-
-    async function loadAudioCache() {
-        const savedCache = localStorage.getItem('audioCache');
-        if (savedCache) {
-            audioCache = JSON.parse(savedCache);
-        }
-
-        // Verify that all cached audio files are still in the Cache API
-        const cache = await caches.open('audio-cache');
-        for (const link in audioCache) {
-            const response = await cache.match(audioCache[link].audioUrl);
-            if (!response) {
-                console.log(`Audio file for ${link} not found in cache, removing entry`);
-                delete audioCache[link];
-            }
-        }
-
-        // Save the cleaned-up cache back to localStorage
-        localStorage.setItem('audioCache', JSON.stringify(audioCache));
-    }
-
-    async function updateHistoryList() {
+    function updateHistoryList() {
         historyList.innerHTML = '';
         Object.keys(audioCache).forEach(link => {
             const li = document.createElement('li');
@@ -299,7 +116,10 @@ document.addEventListener("DOMContentLoaded", async function() {
             playBtn.onclick = () => loadAudioFromCache(link);
             const removeBtn = document.createElement('button');
             removeBtn.textContent = 'Remove';
-            removeBtn.onclick = () => removeFromCache(link);
+            removeBtn.onclick = () => {
+                removeFromCache(link);
+                updateHistoryList();
+            };
             li.appendChild(document.createTextNode(link + ' '));
             li.appendChild(playBtn);
             li.appendChild(removeBtn);
@@ -307,102 +127,28 @@ document.addEventListener("DOMContentLoaded", async function() {
         });
     }
 
-    async function removeFromCache(link) {
-        const cache = await caches.open('audio-cache');
-        await cache.delete(audioCache[link].audioUrl);
-        delete audioCache[link];
-        localStorage.setItem('audioCache', JSON.stringify(audioCache));
-        updateHistoryList();
-    }
-
     clearHistoryBtn.onclick = async function() {
-        const cache = await caches.open('audio-cache');
-        for (const link in audioCache) {
-            await cache.delete(audioCache[link].audioUrl);
-        }
-        audioCache = {};
-        localStorage.setItem('audioCache', JSON.stringify(audioCache));
+        await clearAudioCache();
         updateHistoryList();
     };
 
     // Save current position every 5 seconds
     setInterval(() => {
-        if (currentTrack && audioPlayer.currentTime > 0) {
+        if (typeof currentTrack !== 'undefined' && currentTrack && audioPlayer.currentTime > 0) {
             audioCache[currentTrack].lastPosition = audioPlayer.currentTime;
             localStorage.setItem('audioCache', JSON.stringify(audioCache));
         }
     }, 5000);
 
-    // Call handleSharedUrl instead of directly checking for the URL parameter
-    // handleSharedUrl();
-
-    // Get the link from the shared URL
-    const queryParams = new URLSearchParams(window.location.search);
-    const sharedLink = queryParams.get('url');
-
-    console.log('Shared link from URL:', sharedLink);
-
-    // Only call the API to get MP3 if a valid URL is provided
+    // Handle shared URL
+    const sharedLink = handleSharedUrl();
     if (sharedLink) {
         console.log('Valid URL provided, calling fetchMp3');
         fetchMp3(sharedLink);
     } else {
         console.log("No URL provided. Waiting for user input.");
-        // You might want to update the UI here to indicate that the user needs to provide a URL
     }
 
-    // Add this function to update media session metadata
-    function updateMediaSessionMetadata(title, artist, album) {
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: title || 'Unknown Title',
-                artist: artist || 'Unknown Artist',
-                album: album || 'Unknown Album',
-                artwork: [
-                    { src: '/icons/imagepodcast-transp500.png', sizes: '500x500', type: 'image/png' },
-                    { src: '/icons/imagepodcast.png', sizes: '1024x1024', type: 'image/png' }
-                ]
-            });
-        }
-    }
-
-    // Add this function to set up media session handlers
-    function setupMediaSessionHandlers() {
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.setActionHandler('play', () => {
-                audioPlayer.play();
-                playButton.textContent = 'Pause';
-            });
-            
-            navigator.mediaSession.setActionHandler('pause', () => {
-                audioPlayer.pause();
-                playButton.textContent = 'Play';
-            });
-            
-            navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-                const skipTime = details.seekOffset || 10;
-                audioPlayer.currentTime = Math.max(audioPlayer.currentTime - skipTime, 0);
-            });
-            
-            navigator.mediaSession.setActionHandler('seekforward', (details) => {
-                const skipTime = details.seekOffset || 10;
-                audioPlayer.currentTime = Math.min(audioPlayer.currentTime + skipTime, audioPlayer.duration);
-            });
-            
-            navigator.mediaSession.setActionHandler('seekto', (details) => {
-                if (details.fastSeek && 'fastSeek' in audioPlayer) {
-                    audioPlayer.fastSeek(details.seekTime);
-                    return;
-                }
-                audioPlayer.currentTime = details.seekTime;
-            });
-            
-            navigator.mediaSession.setActionHandler('previoustrack', () => {
-                audioPlayer.currentTime = 0;
-            });
-        }
-    }
-
-    // Call this function to set up the media session handlers
-    setupMediaSessionHandlers();
+    // Set up media session handlers
+    setupMediaSessionHandlers(audioPlayer, playButton);
 });

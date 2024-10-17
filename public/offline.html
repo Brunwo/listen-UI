@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - MP3 Player PWA</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>You are offline</h1>
+  <p>Please check your internet connection and try again.</p>
+  <div id="offlineContent">
+    <h2>Cached Audio Files</h2>
+    <ul id="offlineAudioList"></ul>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const offlineAudioList = document.getElementById('offlineAudioList');
+      const audioCache = JSON.parse(localStorage.getItem('audioCache') || '{}');
+      
+      Object.keys(audioCache).forEach(link => {
+        const li = document.createElement('li');
+        const playBtn = document.createElement('button');
+        playBtn.textContent = 'Play';
+        playBtn.onclick = () => {
+          const audio = new Audio(audioCache[link].audioUrl);
+          audio.currentTime = audioCache[link].lastPosition;
+          audio.play();
+        };
+        li.appendChild(document.createTextNode(link + ' '));
+        li.appendChild(playBtn);
+        offlineAudioList.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>

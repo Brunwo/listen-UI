@@ -52,6 +52,10 @@ export async function saveAudioCache(link, audioUrl) {
 }
 
 export async function removeFromCache(link) {
+    if (!audioCache[link]) {
+        console.log(`Cache entry for ${link} is undefined, cannot remove`);
+        return;
+    }
     const cache = await caches.open('audio-cache');
     await cache.delete(audioCache[link].audioUrl);
     delete audioCache[link];

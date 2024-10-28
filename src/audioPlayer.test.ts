@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { loadAudioFromCache, updateMediaSessionMetadata, setupMediaSessionHandlers } from './audioPlayer';
-// import { audioCache } from './audioCache';
+import { audioCache, setCurrentTrack } from './audioCache';
 
 describe('audioPlayer', () => {
   beforeEach(() => {
@@ -8,18 +8,28 @@ describe('audioPlayer', () => {
       audioCache: {
         'test': { audioUrl: 'test.mp3', lastPosition: 0, transcription: 'Test' }
       },
-      currentTrack: null
+      currentTrack: null,
+      setCurrentTrack: vi.fn()
     }));
     global.document = {
       getElementById: vi.fn().mockReturnValue({
         src: '',
         currentTime: 0,
         style: { display: 'none' },
-        play: vi.fn()
+        play: vi.fn(),
+        addEventListener: vi.fn() // Mock addEventListener
       })
     } as any;
     global.URL = { createObjectURL: vi.fn() } as any;
     global.navigator = { mediaSession: { metadata: null, setActionHandler: vi.fn() } } as any;
+    global.MediaMetadata = vi.fn().mockImplementation((metadata) => metadata);
+    global.caches = {
+      open: vi.fn().mockResolvedValue({
+        match: vi.fn(),
+        add: vi.fn(),
+        delete: vi.fn()
+      })
+    } as any;
   });
 
   it('should load audio from cache', async () => {

@@ -1,24 +1,24 @@
-import { vi } from 'vitest';
+import { describe, vi, beforeEach, expect, it } from 'vitest';
 import { loadAudioCache, saveAudioCache, removeFromCache, clearAudioCache } from './audioCache';
 
 describe('Audio Cache', () => {
   beforeEach(() => {
-    vi.mock('localStorage', () => ({
+    global.localStorage = {
       getItem: vi.fn(),
       setItem: vi.fn()
-    }));
-    vi.mock('caches', () => ({
+    };
+    global.caches = {
       open: vi.fn().mockResolvedValue({
         match: vi.fn(),
         add: vi.fn(),
         delete: vi.fn()
       })
-    }));
+    };
   });
 
-  it('should load audio cache from localStorage', () => {
+  it('should load audio cache from localStorage', async () => {
     (localStorage.getItem as any) = vi.fn().mockReturnValue(JSON.stringify({ 'test': { audioUrl: 'test.mp3' } }));
-    loadAudioCache();
+    await loadAudioCache();
     expect(localStorage.getItem).toHaveBeenCalledWith('audioCache');
   });
 
@@ -28,8 +28,17 @@ describe('Audio Cache', () => {
   });
 
   it('should remove item from cache', async () => {
-    await removeFromCache('test');
+    const link = 'test';
+    global.audioCache = { [link]: { audioUrl: 'test.mp3' } };
+    await removeFromCache(link);
     expect(localStorage.setItem).toHaveBeenCalled();
+  });
+
+  it('should handle undefined cache entry when removing item from cache', async () => {
+    const link = 'undefinedTest';
+    global.audioCache = {};
+    await removeFromCache(link);
+    expect(localStorage.setItem).not.toHaveBeenCalled();
   });
 
   it('should clear audio cache', async () => {

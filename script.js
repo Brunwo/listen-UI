@@ -1,4 +1,4 @@
-import { audioCache, loadAudioCache, removeFromCache, clearAudioCache } from './src/audioCache.js';
+import { audioCache, loadAudioCache, removeFromCache, clearAudioCache, setCurrentTrack } from './src/audioCache.js';
 import { loadAudioFromCache, setupMediaSessionHandlers } from './src/audioPlayer.js';
 import { fetchMp3 } from './src/api.js';
 import { checkOnlineStatus, handleSharedUrl } from './src/utils.js';
@@ -113,7 +113,10 @@ document.addEventListener("DOMContentLoaded", async function() {
             const li = document.createElement('li');
             const playBtn = document.createElement('button');
             playBtn.textContent = 'Play';
-            playBtn.onclick = () => loadAudioFromCache(link);
+            playBtn.onclick = () => {
+                loadAudioFromCache(link);
+                setCurrentTrack(link);
+            };
             const removeBtn = document.createElement('button');
             removeBtn.textContent = 'Remove';
             removeBtn.onclick = () => {

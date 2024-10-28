@@ -1,0 +1,318 @@
+{
+  "numTotalTestSuites": 17,
+  "numPassedTestSuites": 14,
+  "numFailedTestSuites": 3,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 18,
+  "numPassedTests": 15,
+  "numFailedTests": 3,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "startTime": 1730114267616,
+  "success": false,
+  "testResults": [
+    {
+      "assertionResults": [],
+      "startTime": 1730114267616,
+      "endTime": 1730114267616,
+      "status": "passed",
+      "message": "Playwright Test did not expect test() to be called here.\nMost common reasons include:\n- You are calling test() in a configuration file.\n- You are calling test() in a file that is imported by the configuration file.\n- You have two different versions of @playwright/test. This usually happens\n  when one of the dependencies in your package.json depends on @playwright/test.",
+      "name": "/workspaces/listen-UI/e2e/localstorage.spec.js"
+    },
+    {
+      "assertionResults": [],
+      "startTime": 1730114267616,
+      "endTime": 1730114267616,
+      "status": "passed",
+      "message": "Playwright Test did not expect test() to be called here.\nMost common reasons include:\n- You are calling test() in a configuration file.\n- You are calling test() in a file that is imported by the configuration file.\n- You have two different versions of @playwright/test. This usually happens\n  when one of the dependencies in your package.json depends on @playwright/test.",
+      "name": "/workspaces/listen-UI/e2e/share-target.spec.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "",
+            "api"
+          ],
+          "fullName": " api should fetch MP3 from API",
+          "status": "passed",
+          "title": "should fetch MP3 from API",
+          "duration": 8,
+          "failureMessages": []
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "api"
+          ],
+          "fullName": " api should handle offline state",
+          "status": "passed",
+          "title": "should handle offline state",
+          "duration": 1,
+          "failureMessages": []
+        }
+      ],
+      "startTime": 1730114274115,
+      "endTime": 1730114274124,
+      "status": "passed",
+      "message": "",
+      "name": "/workspaces/listen-UI/src/api.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "",
+            "api"
+          ],
+          "fullName": " api should fetch MP3 from API",
+          "status": "passed",
+          "title": "should fetch MP3 from API",
+          "duration": 8,
+          "failureMessages": []
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "api"
+          ],
+          "fullName": " api should handle offline state",
+          "status": "passed",
+          "title": "should handle offline state",
+          "duration": 1,
+          "failureMessages": []
+        }
+      ],
+      "startTime": 1730114273627,
+      "endTime": 1730114273636,
+      "status": "passed",
+      "message": "",
+      "name": "/workspaces/listen-UI/src/api.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "",
+            "audioCache"
+          ],
+          "fullName": " audioCache should load audio cache from localStorage",
+          "status": "passed",
+          "title": "should load audio cache from localStorage",
+          "duration": 3,
+          "failureMessages": []
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "audioCache"
+          ],
+          "fullName": " audioCache should save audio cache to localStorage",
+          "status": "passed",
+          "title": "should save audio cache to localStorage",
+          "duration": 1,
+          "failureMessages": []
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "audioCache"
+          ],
+          "fullName": " audioCache should remove item from cache",
+          "status": "failed",
+          "title": "should remove item from cache",
+          "duration": 6,
+          "failureMessages": [
+            "expected \"spy\" to be called at least once"
+          ],
+          "location": {
+            "line": 34,
+            "column": 34
+          }
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "audioCache"
+          ],
+          "fullName": " audioCache should handle undefined cache entry when removing item from cache",
+          "status": "passed",
+          "title": "should handle undefined cache entry when removing item from cache",
+          "duration": 0,
+          "failureMessages": []
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "audioCache"
+          ],
+          "fullName": " audioCache should clear audio cache",
+          "status": "passed",
+          "title": "should clear audio cache",
+          "duration": 0,
+          "failureMessages": []
+        }
+      ],
+      "startTime": 1730114268161,
+      "endTime": 1730114268171,
+      "status": "failed",
+      "message": "",
+      "name": "/workspaces/listen-UI/src/audioCache.test.js"
+    },
+    {
+      "assertionResults": [],
+      "startTime": 1730114267616,
+      "endTime": 1730114267616,
+      "status": "passed",
+      "message": "describe is not defined",
+      "name": "/workspaces/listen-UI/src/audioCache.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "",
+            "audioPlayer"
+          ],
+          "fullName": " audioPlayer should load audio from cache",
+          "status": "failed",
+          "title": "should load audio from cache",
+          "duration": 9,
+          "failureMessages": [
+            "[vitest] No \"setCurrentTrack\" export is defined on the \"./audioCache\" mock. Did you forget to return it from \"vi.mock\"?\nIf you need to partially mock a module, you can use \"vi.importActual\" inside:\n\n\u001b[32mvi.mock(\"./audioCache\", async () => {\n  const actual = await vi.importActual(\"./audioCache\")\n  return {\n    ...actual,\n    // your mocked methods\n  },\n})\u001b[39m\n"
+          ],
+          "location": {
+            "line": 35,
+            "column": 5
+          }
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "audioPlayer"
+          ],
+          "fullName": " audioPlayer should setup media session handlers",
+          "status": "passed",
+          "title": "should setup media session handlers",
+          "duration": 1,
+          "failureMessages": []
+        }
+      ],
+      "startTime": 1730114269225,
+      "endTime": 1730114269235,
+      "status": "failed",
+      "message": "",
+      "name": "/workspaces/listen-UI/src/audioPlayer.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "",
+            "audioPlayer"
+          ],
+          "fullName": " audioPlayer should load audio from cache",
+          "status": "failed",
+          "title": "should load audio from cache",
+          "duration": 8,
+          "failureMessages": [
+            "[vitest] No \"setCurrentTrack\" export is defined on the \"./audioCache\" mock. Did you forget to return it from \"vi.mock\"?\nIf you need to partially mock a module, you can use \"vi.importActual\" inside:\n\n\u001b[32mvi.mock(\"./audioCache\", async () => {\n  const actual = await vi.importActual(\"./audioCache\")\n  return {\n    ...actual,\n    // your mocked methods\n  },\n})\u001b[39m\n"
+          ],
+          "location": {
+            "line": 35,
+            "column": 5
+          }
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "audioPlayer"
+          ],
+          "fullName": " audioPlayer should update media session metadata",
+          "status": "passed",
+          "title": "should update media session metadata",
+          "duration": 1,
+          "failureMessages": []
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "audioPlayer"
+          ],
+          "fullName": " audioPlayer should setup media session handlers",
+          "status": "passed",
+          "title": "should setup media session handlers",
+          "duration": 0,
+          "failureMessages": []
+        }
+      ],
+      "startTime": 1730114268715,
+      "endTime": 1730114268724,
+      "status": "failed",
+      "message": "",
+      "name": "/workspaces/listen-UI/src/audioPlayer.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "",
+            "utils"
+          ],
+          "fullName": " utils should check online status",
+          "status": "passed",
+          "title": "should check online status",
+          "duration": 2,
+          "failureMessages": []
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "utils"
+          ],
+          "fullName": " utils should handle shared URL",
+          "status": "passed",
+          "title": "should handle shared URL",
+          "duration": 1,
+          "failureMessages": []
+        }
+      ],
+      "startTime": 1730114275066,
+      "endTime": 1730114275069,
+      "status": "passed",
+      "message": "",
+      "name": "/workspaces/listen-UI/src/utils.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "",
+            "utils"
+          ],
+          "fullName": " utils should check online status",
+          "status": "passed",
+          "title": "should check online status",
+          "duration": 2,
+          "failureMessages": []
+        },
+        {
+          "ancestorTitles": [
+            "",
+            "utils"
+          ],
+          "fullName": " utils should handle shared URL",
+          "status": "passed",
+          "title": "should handle shared URL",
+          "duration": 1,
+          "failureMessages": []
+        }
+      ],
+      "startTime": 1730114274607,
+      "endTime": 1730114274610,
+      "status": "passed",
+      "message": "",
+      "name": "/workspaces/listen-UI/src/utils.test.ts"
+    }
+  ]
+}

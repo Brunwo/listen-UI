@@ -44,7 +44,7 @@ export async function fetchMp3(link) {
         console.log('Attempting to connect to Gradio app...');
         const client = await Client.connect(apiServer);
         console.log('Gradio client created successfully');
-        console.log(await client.view_api());
+        // console.log(await client.view_api());
         console.log('Preparing to make prediction...');
 
         const result = await client.predict("/generate_audio", { 
@@ -88,7 +88,7 @@ export async function fetchMp3(link) {
     } catch (error) {
         console.error('Error in fetchMp3:', error);
         console.error('Error stack:', error.stack);
-        alert(`Error fetching MP3: ${error.message}`);
+        // alert(`Error fetching MP3: ${error.message}`);
         
         if (audioPlayer) audioPlayer.src = '';
         if (playButton) playButton.style.display = 'none';

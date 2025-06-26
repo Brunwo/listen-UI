@@ -1,11 +1,11 @@
 {
     "name": "Web listener",
     "short_name": "WebPodcast",
-    "scope": "/listen-UI/",
-    "start_url": "/listen-UI/",
+    "scope": "./",
+    "start_url": "./",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#317EFB",
+    "background_color": "#1a1a1a", /* Match body background */
+    "theme_color": "#1a1a1a",      /* Match meta theme-color */
     "icons": [
       {
         "src": "icons/imagepodcast.png",
@@ -25,7 +25,7 @@
       }
     ],
     "share_target": {
-      "action": "/listen-UI/share-target",
+      "action": "share-target",
       "method": "GET",
       "params": {
         "title": "title",

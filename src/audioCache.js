@@ -42,7 +42,15 @@ export async function loadAudioCache() {
 
 export function setCurrentTrack(link) {
     currentTrack = link;
-    localStorage.setItem('currentTrack', currentTrack);
+    if (link) {
+        localStorage.setItem('currentTrack', currentTrack);
+    } else {
+        localStorage.removeItem('currentTrack'); // Clear if link is null
+    }
+}
+
+export function getCurrentTrack() {
+    return currentTrack;
 }
 
 export async function saveAudioCache(link, audioUrl) {

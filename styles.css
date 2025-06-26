@@ -1,167 +1,455 @@
-body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 50px;
-  }
-  audio {
-    width: 100%;
-  }
-  
-/* Add this to your existing styles.css file */
+/* styles.css - Revamped to match gitdiagram.com aesthetics */
 
+/* --- Variables & Global --- */
+:root {
+    --bg-color: #1a1a1a; /* Dark gray, similar to gitdiagram body */
+    --surface-color: #2a2a2a; /* Slightly lighter for cards/modals */
+    --primary-accent: #3b82f6; /* Blue accent, similar to gitdiagram buttons/links */
+    --secondary-accent: #4f46e5; /* A slightly different purple/blue if needed */
+    --text-color: #e5e7eb; /* Light gray for text */
+    --text-muted-color: #9ca3af; /* Muted gray for less important text */
+    --border-color: #4b5563; /* Gray for borders */
+    --input-bg-color: #374151; /* Darker input background */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+    --container-max-width: 800px; /* Max width for main content area */
+    --border-radius: 0.375rem; /* 6px */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+h1, h2 {
+    color: var(--text-color);
+    margin-bottom: 0.75em;
+}
+
+h1 {
+    font-size: 2em;
+    margin-bottom: 1em;
+    text-align: center;
+}
+
+h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+    margin-top: 1.5em;
+}
+
+p {
+    margin-bottom: 1em;
+}
+
+a {
+    color: var(--primary-accent);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+button {
+    font-family: var(--font-family);
+    cursor: pointer;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    border: 1px solid transparent;
+    font-size: 1rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="url"] {
+    font-family: var(--font-family);
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    border-radius: var(--border-radius);
+    width: 100%;
+    font-size: 1rem;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="url"]:focus {
+    outline: none;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* Blue shadow */
+}
+
+
+/* --- Layout Containers --- */
+.app-container { /* You might want to wrap your body content in this */
+    width: 100%;
+    max-width: var(--container-max-width);
+    margin: 20px auto;
+    padding: 20px;
+    background-color: var(--surface-color); /* Or keep it transparent with body */
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+
+/* --- Audio Player & Controls --- */
+#audioControls {
+    background-color: var(--surface-color);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#player { /* Default HTML5 audio player */
+    width: 100%;
+    margin-bottom: 10px;
+    /* Basic filter to make it look a bit darker to match theme */
+    /* filter: invert(1) hue-rotate(180deg) contrast(0.8) brightness(0.8); */
+    /* Styling the default player is limited, consider custom controls for full theme match */
+}
+
+#controlButtons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    align-items: center;
+}
+
+#controlButtons button {
+    background-color: var(--primary-accent);
+    color: white;
+    border: none;
+}
+
+#controlButtons button:hover {
+    background-color: #2563eb; /* Darker blue */
+}
+
+#playButton { /* Specific styling if needed, e.g., larger */
+    min-width: 100px; /* Ensure 'Play'/'Pause' doesn't change size too much */
+}
+
+
+/* --- Settings Button (Outside sections) --- */
+#settingsBtn { /* Main settings button on the page */
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    margin: 20px 0; /* Give it some space */
+}
+
+#settingsBtn:hover {
+    background-color: var(--input-bg-color); /* Slightly darker on hover */
+    border-color: var(--primary-accent);
+}
+
+/* --- Modal (Settings) --- */
 .modal {
-    display: none;
+    display: none; /* Hidden by default */
     position: fixed;
-    z-index: 1;
+    z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0,0,0,0.4);
+    background-color: rgba(0, 0, 0, 0.7); /* Darker overlay */
+    backdrop-filter: blur(3px);
 }
 
 .modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
+    background-color: var(--surface-color);
+    margin: 10% auto; /* Responsive margin */
+    padding: 25px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    width: 90%;
     max-width: 500px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    position: relative;
 }
 
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 1em;
+    border-bottom: none; /* Remove default H2 border inside modal */
+}
+
+.modal .close {
+    color: var(--text-muted-color);
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 1.8rem;
     font-weight: bold;
-    cursor: pointer;
+    transition: color 0.2s ease;
 }
 
-.close:hover,
-.close:focus {
-    color: black;
+.modal .close:hover,
+.modal .close:focus {
+    color: var(--text-color);
     text-decoration: none;
     cursor: pointer;
 }
 
-#apiKey {
-    width: 100%;
-    padding: 5px;
-    margin: 10px 0;
-}
-
-#saveSettings {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    cursor: pointer;
-}
-
-#saveSettings:hover {
-    background-color: #45a049;
+.modal label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    color: var(--text-muted-color);
+    font-weight: bold;
 }
 
 .api-key-container {
     display: flex;
     align-items: center;
-    margin: 10px 0;
+    gap: 5px; /* Gap between input and toggle button */
 }
 
-#apiKey {
+.api-key-container input {
     flex-grow: 1;
-    margin-right: 5px;
+    margin-right: 0; /* Remove old margin */
 }
 
-#toggleApiKey {
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    padding: 5px 10px;
-    cursor: pointer;
-    font-size: 16px;
+#toggleApiKey { /* Eye button */
+    background-color: var(--input-bg-color);
+    color: var(--text-muted-color);
+    border: 1px solid var(--border-color);
+    padding: 10px; /* Make it same height as input */
+    font-size: 1rem; /* Match input font size */
+    height: calc(2.25em + 2px); /* Match input height: 1em padding * 2 + font-size + border */
 }
 
 #toggleApiKey:hover {
-    background-color: #e0e0e0;
+    border-color: var(--primary-accent);
+    color: var(--text-color);
 }
 
-#apiServer {
-    width: 100%;
-    padding: 5px;
-    margin: 10px 0;
+#saveSettings { /* Save button in modal */
+    background-color: var(--primary-accent);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    margin-top: 25px;
+    width: 100%; /* Make save button full width */
 }
 
-/* ... existing styles ... */
-
-#audioControls {
-    width: 100%;
-    max-width: 500px;
-    margin: 20px auto;
+#saveSettings:hover {
+    background-color: #2563eb; /* Darker blue */
 }
 
-#progressBarContainer {
-    width: 100%;
-    height: 10px;
-    background-color: #ddd;
-    cursor: pointer;
-    margin-bottom: 10px;
-}
 
-#progressBar {
-    height: 100%;
-    background-color: #4CAF50;
-    width: 0;
-}
-
-#timeDisplay {
-    text-align: right;
-    margin-bottom: 10px;
-}
-
-#controlButtons {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-}
-
-#controlButtons button {
-    padding: 5px 10px;
-    cursor: pointer;
-}
-
-#volumeControl {
-    width: 100%;
-}
-
-#volumeSlider {
-    width: 100%;
-}
-
-/* ... (existing styles) ... */
-
-#historySection {
-    margin-top: 20px;
+/* --- Transcription Area --- */
+#transcriptionContainer {
+    background-color: var(--surface-color);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    margin: 20px 0; /* Consistent margin */
     text-align: left;
+}
+
+#transcriptionContainer h2 {
+    border-bottom: none;
+    margin-bottom: 0.5em;
+}
+
+#transcription {
+    white-space: pre-wrap; /* Preserve line breaks from transcription */
+    font-size: 0.95em;
+    line-height: 1.7;
+    max-height: 300px; /* Limit height and make it scrollable */
+    overflow-y: auto;
+    background-color: var(--bg-color); /* Slightly different background for text area */
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+/* Custom scrollbar for transcription */
+#transcription::-webkit-scrollbar {
+    width: 8px;
+}
+#transcription::-webkit-scrollbar-track {
+    background: var(--input-bg-color);
+    border-radius: var(--border-radius);
+}
+#transcription::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--border-radius);
+}
+#transcription::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted-color);
+}
+
+
+/* --- History Section --- */
+#historySection {
+    background-color: var(--surface-color);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    margin: 20px 0; /* Consistent margin */
+    width: 100%;
+    max-width: var(--container-max-width); /* Apply max width here too */
+}
+
+#historySection h2 {
+    border-bottom: none;
+    margin-bottom: 0.5em;
 }
 
 #historyList {
     list-style-type: none;
     padding: 0;
+    max-height: 400px; /* Limit height */
+    overflow-y: auto;
 }
 
 #historyList li {
-    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
 }
 
-#historyList button {
-    margin-left: 10px;
-    padding: 2px 5px;
-    cursor: pointer;
+#historyList li:last-child {
+    border-bottom: none;
 }
 
-#clearHistory {
-    margin-top: 10px;
-    padding: 5px 10px;
-    cursor: pointer;
+#historyList li:hover {
+    background-color: var(--input-bg-color); /* Subtle hover effect */
+}
+
+#historyList li span { /* The text of the history item */
+    flex-grow: 1;
+    margin-right: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-muted-color);
+}
+#historyList li span:hover {
+    color: var(--text-color);
+}
+
+
+#historyList li button {
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 5px 10px; /* Smaller buttons */
+    font-size: 0.9rem;
+    margin-left: 5px;
+}
+
+#historyList li button:hover {
+    background-color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    color: white;
+}
+
+#clearHistory { /* Button to clear all history */
+    background-color: #ef4444; /* Red for destructive action */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-top: 15px;
+    display: block; /* Make it block to center if needed or use text-align on parent */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#clearHistory:hover {
+    background-color: #dc2626; /* Darker red */
+}
+
+
+/* --- Loading Indicator --- */
+#loadingIndicator {
+    position: fixed; /* Or absolute if within a specific container */
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--primary-accent);
+    color: white;
+    padding: 10px 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 2000; /* Ensure it's on top */
+    font-size: 1rem;
+}
+
+/* --- Utility Classes --- */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+    .app-container, #historySection {
+        padding: 15px;
+    }
+    h1 {
+        font-size: 1.5em;
+    }
+    h2 {
+        font-size: 1.25em;
+    }
+    .modal-content {
+        margin: 5% auto;
+        width: 95%;
+        padding: 20px;
+    }
+    #controlButtons {
+        flex-direction: column; /* Stack controls on small screens */
+        gap: 10px;
+    }
+    #controlButtons button {
+        width: 100%;
+    }
+    #historyList li {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    #historyList li div { /* Assuming buttons are wrapped in a div */
+        margin-top: 8px;
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+    }
+    #historyList li button {
+        flex-grow: 1; /* Make buttons take available space if needed */
+        margin-left: 0;
+        margin-right: 5px; /* if multiple buttons side by side */
+    }
+     #historyList li button:last-child {
+        margin-right: 0;
+    }
 }

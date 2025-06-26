@@ -8,6 +8,7 @@
     "build": "vite build",   
     "serve": "vite preview",
     "test": "vitest",
+    "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },

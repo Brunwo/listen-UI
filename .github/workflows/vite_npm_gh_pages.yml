@@ -52,28 +52,76 @@ jobs:
       matrix:
         browser: [chromium, firefox, webkit]
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the project for testing
+        run: npm run build
+        env:
+          GITHUB_PAGES: 'true'
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
       - name: Run Vitest (unit tests)
         run: npm run test:unit
-      
-      # - name: Run Playwright Tests
-      #   run: npm run test:e2e
-
-      # - name: Run Playwright tests
-      #   run: npx playwright test
-
         env:
           CI: true
+      
+      - name: Run Playwright tests
+        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          CI: true
+          # Playwright will use http://localhost:4173 by default as per playwright.config.js
+          # The webServer in playwright.config.js will run `npm run serve` which serves the `dist`
+          # folder. Vite's preview server will respect the base path set during `npm run build`.
+          # The GITHUB_REPOSITORY is already passed to the build step, so vite.config.js
+          # correctly sets the base path (e.g., /my-repo/).
+          # Playwright's baseURL in config will be http://localhost:4173/.
+          # Navigations in tests like page.goto('/') should correctly resolve to http://localhost:4173/my-repo/
+          # if the server serves it that way.
+
+          # Let's explicitly set the CI_BASE_URL to ensure playwright navigates correctly.
+          # The server started by `npm run serve` will listen on 4173.
+          # The base path comes from the vite build.
+          # So, if repo is 'owner/myrepo', base path is '/myrepo/'
+          # Full URL for playwright should be 'http://localhost:4173/myrepo/'
+          CI_BASE_URL: http://localhost:4173/${{ github.event.repository.name }}/
 
   deploy:
     needs: [setup, test]
     environment:
       name: github-pages
-      url: ${{ needs.setup.outputs.page_url }}
+      url: ${{ needs.setup.outputs.page_url }} # Use the output from the setup job
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
       
-      # - name: Build the project
-      #   run: npm run build
+      - name: Build the project
+        run: npm run build
+        env:
+          GITHUB_PAGES: 'true' # For vite.config.js to detect GitHub Pages environment
+          GITHUB_REPOSITORY: ${{ github.repository }} # Pass the repository info
       
       - name: Configure Pages
         uses: actions/configure-pages@v4

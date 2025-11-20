@@ -5,6 +5,7 @@ let audioPlayer, playButton, skipBackwardButton, skipForwardButton;
 let settingsBtn, settingsModal, closeModalBtn, saveSettingsBtn, apiKeyInput, toggleApiKeyBtn, apiServerInput;
 let historyListEl, clearHistoryBtn;
 let loadingIndicatorEl, transcriptionContainerEl, transcriptionElementEl;
+let urlInput, generateBtn;
 
 // --- Initialization ---
 export function initializeUI() {
@@ -17,7 +18,7 @@ export function initializeUI() {
     // Settings Modal Elements
     settingsBtn = document.getElementById('settingsBtn');
     settingsModal = document.getElementById('settingsModal');
-    closeModalBtn = document.querySelector('.modal .close'); // More specific selector
+    closeModalBtn = document.querySelector('#settingsModal .close');
     saveSettingsBtn = document.getElementById('saveSettings');
     apiKeyInput = document.getElementById('apiKey');
     toggleApiKeyBtn = document.getElementById('toggleApiKey');
@@ -32,12 +33,17 @@ export function initializeUI() {
     transcriptionContainerEl = document.getElementById('transcriptionContainer');
     transcriptionElementEl = document.getElementById('transcription');
 
+    // URL Input Elements
+    urlInput = document.getElementById('urlInput');
+    generateBtn = document.getElementById('generateBtn');
+
     // Validate that all elements are found
     const elements = {
         audioPlayer, playButton, skipBackwardButton, skipForwardButton,
         settingsBtn, settingsModal, closeModalBtn, saveSettingsBtn, apiKeyInput, toggleApiKeyBtn, apiServerInput,
         historyListEl, clearHistoryBtn,
-        loadingIndicatorEl, transcriptionContainerEl, transcriptionElementEl
+        loadingIndicatorEl, transcriptionContainerEl, transcriptionElementEl,
+        urlInput, generateBtn
     };
 
     for (const key in elements) {
@@ -53,32 +59,32 @@ export function initializeUI() {
 export function showLoading(message = 'Loading audio...') {
     if (loadingIndicatorEl) {
         loadingIndicatorEl.textContent = message;
-        loadingIndicatorEl.style.display = 'block';
+        loadingIndicatorEl.classList.remove('hidden');
     }
-    if (transcriptionContainerEl) transcriptionContainerEl.style.display = 'none';
+    if (transcriptionContainerEl) transcriptionContainerEl.classList.add('hidden');
 }
 
 export function hideLoading() {
-    if (loadingIndicatorEl) loadingIndicatorEl.style.display = 'none';
+    if (loadingIndicatorEl) loadingIndicatorEl.classList.add('hidden');
 }
 
 // --- Transcription Display ---
 export function showTranscription(text) {
     if (transcriptionElementEl) transcriptionElementEl.textContent = text;
-    if (transcriptionContainerEl) transcriptionContainerEl.style.display = 'block';
+    if (transcriptionContainerEl) transcriptionContainerEl.classList.remove('hidden');
 }
 
 export function hideTranscription() {
-    if (transcriptionContainerEl) transcriptionContainerEl.style.display = 'none';
+    if (transcriptionContainerEl) transcriptionContainerEl.classList.add('hidden');
 }
 
 // --- Player Controls ---
 export function showPlayButton() {
-    if (playButton) playButton.style.display = 'block';
+    if (playButton) playButton.classList.remove('hidden');
 }
 
 export function hidePlayButton() {
-    if (playButton) playButton.style.display = 'none';
+    if (playButton) playButton.classList.add('hidden');
 }
 
 export function updatePlayButtonState(isPlaying) {
@@ -95,14 +101,14 @@ export function openSettingsModal() {
         // Store current values before opening, in case of cancel
         if (apiKeyInput) settingsModal.dataset.originalApiKey = apiKeyInput.value;
         if (apiServerInput) settingsModal.dataset.originalApiServer = apiServerInput.value;
-        settingsModal.style.display = 'block';
+        settingsModal.classList.remove('hidden');
         if (apiKeyInput) apiKeyInput.focus();
     }
 }
 
 export function closeSettingsModal(restoreOriginal = true) {
     if (settingsModal) {
-        settingsModal.style.display = 'none';
+        settingsModal.classList.add('hidden');
         if (restoreOriginal) {
             if (apiKeyInput && typeof settingsModal.dataset.originalApiKey !== 'undefined') {
                 apiKeyInput.value = settingsModal.dataset.originalApiKey;
@@ -131,22 +137,34 @@ export function updateHistoryListUI(history, onPlayCallback, onRemoveCallback) {
     Object.keys(history).forEach(link => {
         const entry = history[link];
         const li = document.createElement('li');
+        li.className = 'flex justify-between items-center p-3 bg-muted/50 rounded-md hover:bg-muted transition-colors';
+
+        const textContainer = document.createElement('div');
+        textContainer.className = 'flex-1 mr-3 overflow-hidden';
 
         const textNode = document.createElement('span');
-        textNode.textContent = entry.title || link; // Use title if available
+        textNode.className = 'text-muted-foreground truncate block';
+        textNode.textContent = entry.title || link;
         textNode.title = link; // Show full link on hover
-        li.appendChild(textNode);
+        textContainer.appendChild(textNode);
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'flex gap-2';
 
         const playBtn = document.createElement('button');
+        playBtn.className = 'bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90 transition-colors';
         playBtn.textContent = 'Play';
         playBtn.onclick = () => onPlayCallback(link);
 
         const removeBtn = document.createElement('button');
+        removeBtn.className = 'bg-destructive text-destructive-foreground px-3 py-1 rounded text-sm hover:bg-destructive/90 transition-colors';
         removeBtn.textContent = 'Remove';
         removeBtn.onclick = () => onRemoveCallback(link);
 
-        li.appendChild(playBtn);
-        li.appendChild(removeBtn);
+        li.appendChild(textContainer);
+        buttonContainer.appendChild(playBtn);
+        buttonContainer.appendChild(removeBtn);
+        li.appendChild(buttonContainer);
         historyListEl.appendChild(li);
     });
 }
@@ -164,6 +182,8 @@ export function getApiKeyInputValue() { return apiKeyInput ? apiKeyInput.value.t
 export function getApiServerInputValue() { return apiServerInput ? apiServerInput.value.trim() : ''; }
 export function setApiKeyInputValue(value) { if (apiKeyInput) apiKeyInput.value = value; }
 export function setApiServerInputValue(value) { if (apiServerInput) apiServerInput.value = value; }
+export function getUrlInputValue() { return urlInput ? urlInput.value.trim() : ''; }
+export function setUrlInputValue(value) { if (urlInput) urlInput.value = value; }
 
 // --- Initial values for settings modal (to be called from script.js) ---
 export function setOriginalSettingsForModal(apiKey, apiServer) {
@@ -186,6 +206,7 @@ export function getElementsForEventListeners() {
     return {
         settingsBtn, closeModalBtn, saveSettingsBtn, toggleApiKeyBtn, clearHistoryBtn,
         apiKeyInput, // For Enter key listener
-        settingsModal // For Escape key and window click listener
+        settingsModal, // For Escape key and window click listener
+        generateBtn, urlInput
     };
 }

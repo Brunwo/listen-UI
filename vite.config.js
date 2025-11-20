@@ -1,10 +1,10 @@
-
-// vite.config.js
 import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 
 // Function to determine base path for GitHub Pages
 const getRepoName = () => {
-  const repoUrl = process.env.GITHUB_REPOSITORY; // GITHUB_REPOSITORY is in the format "owner/repo"
+  const repoUrl = process.env.GITHUB_REPOSITORY;
   if (repoUrl) {
     return `/${repoUrl.split('/')[1]}/`;
   }
@@ -16,12 +16,37 @@ export default defineConfig(({ command, mode }) => {
   const base = isProduction && process.env.GITHUB_PAGES ? getRepoName() : '/';
 
   return {
-    base: base, // Set the base path for routing and assets
+    plugins: [
+      basicSsl(),
+      VitePWA({
+        strategies: 'injectManifest',
+        srcDir: '',
+        filename: 'service-worker.js',
+        manifest: {
+          ...require('./public/manifest.json'),
+          start_url: base,
+          scope: base
+        },
+        devOptions: {
+          enabled: true,
+          type: 'module',
+          navigateFallback: 'index.html'
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        }
+      })
+    ],
+    base: base,
     build: {
-      outDir: 'dist', // The output directory for bundled files
+      outDir: 'dist',
     },
     define: {
-      '__APP_BASE__': JSON.stringify(base) // Make base path available to client code
+      '__APP_BASE__': JSON.stringify(base)
+    },
+    server: {
+      https: true,
+      port: 3000
     }
   };
 });

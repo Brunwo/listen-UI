@@ -20,7 +20,7 @@ import * as ui from './src/ui.js';
 // Default API server if not set in localStorage (align with api.js or make it configurable globally)
 const DEFAULT_API_SERVER = "Mightypeacock/webtoaudio";
 
-document.addEventListener("DOMContentLoaded", async function() {
+document.addEventListener("DOMContentLoaded", async function () {
     // --- 1. Initialize UI Elements ---
     // This will get all DOM elements and store them in ui.js module scope
     const uiElements = ui.initializeUI();
@@ -100,7 +100,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     if (eventListenerElements.saveSettingsBtn) {
-        eventListenerElements.saveSettingsBtn.onclick = function() {
+        eventListenerElements.saveSettingsBtn.onclick = function () {
             const apiKey = ui.getApiKeyInputValue();
             const apiServer = ui.getApiServerInputValue();
             if (apiKey && apiServer) {
@@ -117,12 +117,12 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     // Keyboard listeners for settings modal
     if (eventListenerElements.settingsModal) {
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             if (event.target == eventListenerElements.settingsModal) {
                 ui.closeSettingsModal(true);
             }
         };
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', function (event) {
             if (eventListenerElements.settingsModal.style.display === "block") {
                 if (event.key === "Escape") {
                     ui.closeSettingsModal(true);
@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                     // Allow Enter on API Key input to trigger save (optional)
                     // Or just let the button be clicked. For now, let button handle it.
                 } else if (event.key === "Enter" && eventListenerElements.saveSettingsBtn) {
-                     eventListenerElements.saveSettingsBtn.click(); // Trigger save on Enter if modal is up generally
+                    eventListenerElements.saveSettingsBtn.click(); // Trigger save on Enter if modal is up generally
                 }
             }
         });
@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     if (eventListenerElements.clearHistoryBtn) {
-        eventListenerElements.clearHistoryBtn.onclick = async function() {
+        eventListenerElements.clearHistoryBtn.onclick = async function () {
             await clearAudioCacheData(); // Use renamed cache function
             refreshHistoryDisplay();
             ui.resetPlayerSrc();
@@ -190,6 +190,31 @@ document.addEventListener("DOMContentLoaded", async function() {
             ui.hideTranscription();
             setCurrentTrack(null);
         };
+    }
+
+    // --- Manual URL Generation ---
+    if (eventListenerElements.generateBtn) {
+        eventListenerElements.generateBtn.onclick = () => {
+            const url = ui.getUrlInputValue();
+            if (url) {
+                processLink(url);
+            } else {
+                ui.showAlert("Please enter a valid URL.");
+            }
+        };
+    }
+
+    if (eventListenerElements.urlInput) {
+        eventListenerElements.urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const url = ui.getUrlInputValue();
+                if (url) {
+                    processLink(url);
+                } else {
+                    ui.showAlert("Please enter a valid URL.");
+                }
+            }
+        });
     }
 
     // Initial load of audio cache data and history display

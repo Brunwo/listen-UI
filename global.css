@@ -1,0 +1,12 @@
+@import 'git-diagram-globals.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Additional custom styles for your audio app */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Your existing custom styles can go here or be adapted to Tailwind classes */

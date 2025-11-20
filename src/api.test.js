@@ -17,9 +17,27 @@ describe('api', () => {
         src: ''
       })
     };
+    global.caches = {
+      open: vi.fn().mockResolvedValue({
+        add: vi.fn(),
+        match: vi.fn(),
+        delete: vi.fn()
+      })
+    };
     Client.connect = vi.fn().mockResolvedValue({
+      submit: vi.fn().mockReturnValue({
+        on: vi.fn().mockImplementation((event, callback) => {
+          if (event === 'data') {
+            callback({ data: [{ url: 'http://example.com/test.mp3' }, 'Test transcription'] });
+          }
+          return { on: vi.fn() }; // Chainable
+        }),
+        catch: vi.fn().mockReturnThis(),
+        then: vi.fn().mockReturnThis(),
+        finally: vi.fn().mockReturnThis()
+      }),
       predict: vi.fn().mockResolvedValue({
-        data: [{ url: 'test.mp3' }, 'Test transcription']
+        data: [{ url: 'http://example.com/test.mp3' }, 'Test transcription']
       })
     });
   });
@@ -32,8 +50,6 @@ describe('api', () => {
 
   it('should handle offline state', async () => {
     global.navigator.onLine = false;
-    global.alert = vi.fn();
-    await fetchMp3('https://example.com');
-    expect(alert).toHaveBeenCalledWith('You are offline. Unable to fetch new audio.');
+    await expect(fetchMp3('https://example.com')).rejects.toThrow('You are offline. Unable to fetch new audio.');
   });
 });

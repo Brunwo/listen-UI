@@ -1,61 +1,131 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MP3 Player PWA</title>
-  <meta name="theme-color" content="#1a1a1a"> {/* Updated to dark theme background */}
+  <meta name="theme-color" content="#1a1a1a">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="styles.css">
-  <!-- Removed Gradio client library -->
+  <link rel="stylesheet" href="global.css">
 </head>
-<body>
-  <h1>web to podcast player</h1>
-  
-  <!-- Add audio controls container -->
-  <div id="audioControls">
-    <audio id="player" controls></audio>
-    <div id="controlButtons">
-      <button id="skipBackward">-10s</button>
-      <button id="playButton" style="display: none;">Play</button>
-      <button id="skipForward">+10s</button>
-    </div>
-  </div>
 
-  <!-- Add settings button -->
-  <button id="settingsBtn">Settings</button>
+<body class="bg-background text-foreground min-h-screen flex flex-col items-center p-4 md:p-6">
+  <div class="w-full max-w-4xl mx-auto space-y-6">
+    <h1 class="text-3xl md:text-4xl font-bold text-center mb-8">Web to Podcast Player</h1>
 
-  <!-- Add transcription container -->
-  <div id="transcriptionContainer" style="display: none;">
-    <h2>Transcription:</h2>
-    <p id="transcription"></p>
-  </div>
-
-  <!-- Add settings modal -->
-  <div id="settingsModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2>Settings</h2>
-      <label for="apiKey">OpenAI API Key:</label>
-      <div class="api-key-container">
-        <input type="password" id="apiKey" placeholder="Enter your API key">
-        <button id="toggleApiKey">👁️</button>
+    <!-- Audio Controls -->
+    <div class="bg-card rounded-lg p-6 shadow-lg border">
+      <audio id="player" controls class="w-full mb-4"></audio>
+      <div class="flex justify-center gap-4">
+        <button id="skipBackward"
+          class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">
+          -10s
+        </button>
+        <button id="playButton"
+          class="bg-primary text-primary-foreground px-6 py-2 rounded-md hover:bg-primary/90 transition-colors hidden">
+          Play
+        </button>
+        <button id="skipForward"
+          class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">
+          +10s
+        </button>
       </div>
-      <label for="apiServer">API Server:</label>
-      <input type="text" id="apiServer" placeholder="Enter API server URL">
-      <button id="saveSettings">Save</button>
+    </div>
+
+    <!-- Settings Button -->
+    <button id="settingsBtn"
+      class="bg-secondary text-secondary-foreground px-6 py-3 rounded-md hover:bg-secondary/80 transition-colors border">
+      Settings
+    </button>
+
+    <!-- Transcription Container -->
+    <div id="transcriptionContainer" class="bg-card rounded-lg p-6 shadow-lg border hidden">
+      <h2 class="text-xl font-semibold mb-4 border-b pb-2">Transcription</h2>
+      <p id="transcription"
+        class="text-sm leading-relaxed max-h-80 overflow-y-auto bg-muted p-3 rounded-md whitespace-pre-wrap"></p>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50">
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-card rounded-lg p-6 shadow-xl border max-w-md w-full relative">
+          <button
+            class="close absolute top-4 right-4 text-muted-foreground hover:text-foreground text-2xl">&times;</button>
+          <h2 class="text-xl font-semibold mb-6">Settings</h2>
+
+          <div class="space-y-4">
+            <div>
+              <label for="apiKey" class="block text-sm font-medium mb-2">OpenAI API Key</label>
+              <div class="flex gap-2">
+                <input type="password" id="apiKey" placeholder="Enter your API key"
+                  class="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <button id="toggleApiKey"
+                  class="bg-muted text-muted-foreground px-3 py-2 rounded-md hover:bg-muted/80 border">👁️</button>
+              </div>
+            </div>
+
+            <div>
+              <label for="apiServer" class="block text-sm font-medium mb-2">API Server</label>
+              <input type="text" id="apiServer" placeholder="Enter API server URL"
+                class="w-full bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            </div>
+          </div>
+
+          <button id="saveSettings"
+            class="w-full bg-primary text-primary-foreground py-2 rounded-md hover:bg-primary/90 transition-colors mt-6">
+            Save Settings
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator"
+      class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg hidden z-40">
+      Loading audio...
+    </div>
+
+    <!-- URL Input Section -->
+    <div class="bg-card rounded-lg p-6 shadow-lg border">
+      <h2 class="text-xl font-semibold mb-4 border-b pb-2">Generate Podcast</h2>
+      <div class="flex gap-2">
+        <input type="url" id="urlInput" placeholder="Paste article URL here..."
+          class="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+        <button id="generateBtn"
+          class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">
+          Generate
+        </button>
+      </div>
+    </div>
+
+    <!-- History Section -->
+    <div id="historySection" class="bg-card rounded-lg p-6 shadow-lg border">
+      <h2 class="text-xl font-semibold mb-4 border-b pb-2">History</h2>
+      <ul id="historyList" class="space-y-2 max-h-96 overflow-y-auto"></ul>
+      <button id="clearHistory"
+        class="bg-destructive text-destructive-foreground px-4 py-2 rounded-md hover:bg-destructive/90 transition-colors mt-4">
+        Clear History
+      </button>
     </div>
   </div>
-  <div id="loadingIndicator" style="display: none;">Loading audio...</div>
-
-  <!-- Add history section -->
-  <div id="historySection">
-    <h2>History</h2>
-    <ul id="historyList"></ul>
-    <button id="clearHistory">Clear History</button>
   </div>
 
   <script type="module" src="script.js"></script>
   <!-- <script src="/script.js"></script> -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful');
+          })
+          .catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+  </script>
 </body>
+
 </html>

@@ -1,6 +1,10 @@
+import { precacheAndRoute } from 'workbox-precaching';
+
 // Ensure __APP_BASE__ is defined. It will be replaced by Vite during build.
 // It should end with a slash if it's not the root. e.g., '/repo/' or '/'
 const basePath = typeof __APP_BASE__ !== 'undefined' ? __APP_BASE__ : '/';
+
+precacheAndRoute(self.__WB_MANIFEST);
 
 const CACHE_NAME = 'mp3-player-cache-v1';
 

@@ -41,7 +41,11 @@ export async function loadAudioFromCache(link) {
 
         if (response) {
             const blob = await response.blob();
-            audioPlayer.src = URL.createObjectURL(blob);
+            const objectUrl = URL.createObjectURL(blob);
+            audioPlayer.src = objectUrl;
+            // Store reference for cleanup
+            if (!audioPlayer.dataset) audioPlayer.dataset = {};
+            audioPlayer.dataset.objectUrl = objectUrl;
         } else {
             // Fallback if not in Cache API but in localStorage (should ideally not happen with cache checks)
             console.warn(`Audio for ${link} was in localStorage cache metadata but not in Cache API. Trying direct URL.`);
@@ -63,6 +67,12 @@ export async function loadAudioFromCache(link) {
             }
         });
 
+        // Clean up previous object URL if exists
+        if (audioPlayer.dataset && audioPlayer.dataset.objectUrl) {
+            URL.revokeObjectURL(audioPlayer.dataset.objectUrl);
+        }
+        if (audioPlayer.dataset) audioPlayer.dataset.objectUrl = '';
+
         setCurrentTrack(link);
 
         showPlayButton(); // From ui.js
@@ -81,6 +91,12 @@ export async function loadAudioFromCache(link) {
         console.error("Error loading audio from cache:", error);
         showAlert(`Error loading audio: ${error.message}`);
         return false; // Indicate failure
+    } finally {
+        // Clean up object URL on error
+        if (audioPlayer.dataset && audioPlayer.dataset.objectUrl) {
+            URL.revokeObjectURL(audioPlayer.dataset.objectUrl);
+            audioPlayer.dataset.objectUrl = '';
+        }
     }
 }
 

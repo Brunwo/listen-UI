@@ -12,13 +12,21 @@ import {
     loadAudioFromCache as playAudioFromCache, // Renamed for clarity
     setupMediaSessionHandlers
 } from './src/audioPlayer.js';
-import { fetchMp3 as fetchAudioData } from './src/api.js'; // Renamed for clarity
+import { fetchMp3 as fetchAudioData, DEFAULT_API_SERVER } from './src/api.js'; // Renamed for clarity
 import { handleSharedUrl } from './src/utils.js'; // checkOnlineStatus might be useful later
+import huggingfaceClient from './src/huggingface.js';
 
 import * as ui from './src/ui.js';
 
-// Default API server if not set in localStorage (align with api.js or make it configurable globally)
-const DEFAULT_API_SERVER = "Mightypeacock/webtoaudio";
+// --- Validation Utilities ---
+function isValidUrl(string) {
+    try {
+        const url = new URL(string);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
 
 document.addEventListener("DOMContentLoaded", async function () {
     // --- 1. Initialize UI Elements ---
@@ -34,7 +42,15 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     // --- Helper function to process a link (fetch or load from cache) ---
     async function processLink(link) {
-        if (!link) return;
+        if (!link) {
+            ui.showAlert('No URL provided.');
+            return;
+        }
+
+        if (!isValidUrl(link)) {
+            ui.showAlert('Please enter a valid URL starting with http:// or https://');
+            return;
+        }
 
         ui.showLoading(`Processing: ${link}`); // Initial loading message
         ui.hideTranscription(); // Hide previous transcription
@@ -76,9 +92,22 @@ document.addEventListener("DOMContentLoaded", async function () {
     // --- 2. Load Settings & Initial State ---
     const savedApiKey = localStorage.getItem('openaiApiKey') || '';
     const savedApiServer = localStorage.getItem('apiServer') || DEFAULT_API_SERVER;
+    const savedHfApiKey = localStorage.getItem('hf_api_key') || '';
+    const savedHfEndpointUrl = localStorage.getItem('hf_endpoint_url') || '';
+    
     ui.setApiKeyInputValue(savedApiKey);
     ui.setApiServerInputValue(savedApiServer);
-    ui.setOriginalSettingsForModal(savedApiKey, savedApiServer); // Store for modal 'cancel'
+    ui.setHfApiKeyInputValue(savedHfApiKey);
+    ui.setHfEndpointUrlInputValue(savedHfEndpointUrl);
+    ui.setOriginalSettingsForModal(savedApiKey, '', savedApiServer, savedHfApiKey, savedHfEndpointUrl); // Store for modal 'cancel'
+    
+    // Initialize Hugging Face client with saved settings
+    if (savedHfApiKey) {
+        huggingfaceClient.setApiKey(savedHfApiKey);
+    }
+    if (savedHfEndpointUrl) {
+        huggingfaceClient.setEndpointUrl(savedHfEndpointUrl);
+    }
 
     // --- 3. Setup Event Listeners using elements from ui.js ---
     const eventListenerElements = ui.getElementsForEventListeners();
@@ -99,14 +128,57 @@ document.addEventListener("DOMContentLoaded", async function () {
         eventListenerElements.toggleApiKeyBtn.onclick = ui.toggleApiKeyVisibility;
     }
 
+    if (eventListenerElements.toggleHfApiKeyBtn) {
+        eventListenerElements.toggleHfApiKeyBtn.onclick = ui.toggleHfApiKeyVisibility;
+    }
+
+    if (eventListenerElements.testHfConnectionBtn) {
+        eventListenerElements.testHfConnectionBtn.onclick = async function () {
+            const hfApiKey = ui.getHfApiKeyInputValue();
+            const hfEndpointUrl = ui.getHfEndpointUrlInputValue();
+            
+            if (!hfApiKey || !hfEndpointUrl) {
+                ui.showAlert('Please enter both Hugging Face API key and Endpoint URL.');
+                return;
+            }
+            
+            ui.showLoading('Testing HF connection...');
+            try {
+                // Test by attempting to get an embedding
+                const testResult = await huggingfaceClient.getEmbedding('test');
+                console.log('HF Connection test result:', testResult);
+                ui.showAlert('Hugging Face connection successful!');
+            } catch (error) {
+                console.error('HF Connection test failed:', error);
+                ui.showAlert(`HF connection failed: ${error.message}`);
+            } finally {
+                ui.hideLoading();
+            }
+        };
+    }
+
     if (eventListenerElements.saveSettingsBtn) {
         eventListenerElements.saveSettingsBtn.onclick = function () {
             const apiKey = ui.getApiKeyInputValue();
             const apiServer = ui.getApiServerInputValue();
+            const hfApiKey = ui.getHfApiKeyInputValue();
+            const hfEndpointUrl = ui.getHfEndpointUrlInputValue();
+            
             if (apiKey && apiServer) {
                 localStorage.setItem('openaiApiKey', apiKey);
                 localStorage.setItem('apiServer', apiServer);
-                ui.setOriginalSettingsForModal(apiKey, apiServer); // Update "original" to current saved
+                
+                // Save Hugging Face settings
+                if (hfApiKey) {
+                    localStorage.setItem('hf_api_key', hfApiKey);
+                    huggingfaceClient.setApiKey(hfApiKey);
+                }
+                if (hfEndpointUrl) {
+                    localStorage.setItem('hf_endpoint_url', hfEndpointUrl);
+                    huggingfaceClient.setEndpointUrl(hfEndpointUrl);
+                }
+                
+                ui.setOriginalSettingsForModal(apiKey, '', apiServer, hfApiKey, hfEndpointUrl); // Update "original" to current saved
                 ui.showAlert('Settings saved successfully!');
                 ui.closeSettingsModal(false); // false, don't restore, they are saved
             } else {
@@ -217,6 +289,15 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
+    // --- 8. Online/Offline Status (Optional Enhancement) ---
+    // window.addEventListener('online', () => {
+    //     ui.showAlert('You are back online!');
+    //     refreshHistoryDisplay(); // Refresh, some items might be playable now
+    // });
+    // window.addEventListener('offline', () => {
+    //     ui.showAlert('You are offline. Some features may be limited.');
+    // });
+
     // Initial load of audio cache data and history display
     await loadAudioCacheData(); // Use renamed cache function
     refreshHistoryDisplay();
@@ -253,15 +334,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (audioPlayer && playButton) {
         setupMediaSessionHandlers(audioPlayer, playButton);
     }
-
-    // --- 8. Online/Offline Status (Optional Enhancement) ---
-    // window.addEventListener('online', () => {
-    //     ui.showAlert('You are back online!');
-    //     refreshHistoryDisplay(); // Refresh, some items might be playable now
-    // });
-    // window.addEventListener('offline', () => {
-    //     ui.showAlert('You are offline. Some features may be limited.');
-    // });
 
     console.log("Application initialized.");
 });

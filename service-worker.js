@@ -6,7 +6,7 @@ const basePath = typeof __APP_BASE__ !== 'undefined' ? __APP_BASE__ : '/';
 
 precacheAndRoute(self.__WB_MANIFEST);
 
-const CACHE_NAME = 'mp3-player-cache-v1';
+const CACHE_NAME = 'audio-cache';
 
 // Construct URLs relative to the base path
 const urlsToCache = [

@@ -3,9 +3,13 @@
 // --- Element Selectors ---
 let audioPlayer, playButton, skipBackwardButton, skipForwardButton;
 let settingsBtn, settingsModal, closeModalBtn, saveSettingsBtn, apiKeyInput, toggleApiKeyBtn, apiServerInput;
+let hfTokenInput, toggleHfTokenBtn, hfLoginBtn;
 let historyListEl, clearHistoryBtn;
 let loadingIndicatorEl, transcriptionContainerEl, transcriptionElementEl;
 let urlInput, generateBtn;
+
+// Hugging Face Semantic Search Elements
+let hfApiKeyInput, toggleHfApiKeyBtn, hfEndpointUrlInput, testHfConnectionBtn;
 
 // --- Initialization ---
 export function initializeUI() {
@@ -22,7 +26,16 @@ export function initializeUI() {
     saveSettingsBtn = document.getElementById('saveSettings');
     apiKeyInput = document.getElementById('apiKey');
     toggleApiKeyBtn = document.getElementById('toggleApiKey');
+    hfTokenInput = document.getElementById('hfToken');
+    toggleHfTokenBtn = document.getElementById('toggleHfToken');
+    hfLoginBtn = document.getElementById('hfLoginBtn');
     apiServerInput = document.getElementById('apiServer');
+
+    // Hugging Face Semantic Search Elements
+    hfApiKeyInput = document.getElementById('hfApiKey');
+    toggleHfApiKeyBtn = document.getElementById('toggleHfApiKey');
+    hfEndpointUrlInput = document.getElementById('hfEndpointUrl');
+    testHfConnectionBtn = document.getElementById('testHfConnection');
 
     // History List Elements
     historyListEl = document.getElementById('historyList');
@@ -41,6 +54,8 @@ export function initializeUI() {
     const elements = {
         audioPlayer, playButton, skipBackwardButton, skipForwardButton,
         settingsBtn, settingsModal, closeModalBtn, saveSettingsBtn, apiKeyInput, toggleApiKeyBtn, apiServerInput,
+        hfTokenInput, toggleHfTokenBtn, hfLoginBtn,
+        hfApiKeyInput, toggleHfApiKeyBtn, hfEndpointUrlInput, testHfConnectionBtn,
         historyListEl, clearHistoryBtn,
         loadingIndicatorEl, transcriptionContainerEl, transcriptionElementEl,
         urlInput, generateBtn
@@ -100,6 +115,8 @@ export function openSettingsModal() {
     if (settingsModal) {
         // Store current values before opening, in case of cancel
         if (apiKeyInput) settingsModal.dataset.originalApiKey = apiKeyInput.value;
+        if (apiKeyInput) settingsModal.dataset.originalApiKey = apiKeyInput.value;
+        if (hfTokenInput) settingsModal.dataset.originalHfToken = hfTokenInput.value;
         if (apiServerInput) settingsModal.dataset.originalApiServer = apiServerInput.value;
         settingsModal.classList.remove('hidden');
         if (apiKeyInput) apiKeyInput.focus();
@@ -112,6 +129,9 @@ export function closeSettingsModal(restoreOriginal = true) {
         if (restoreOriginal) {
             if (apiKeyInput && typeof settingsModal.dataset.originalApiKey !== 'undefined') {
                 apiKeyInput.value = settingsModal.dataset.originalApiKey;
+            }
+            if (hfTokenInput && typeof settingsModal.dataset.originalHfToken !== 'undefined') {
+                hfTokenInput.value = settingsModal.dataset.originalHfToken;
             }
             // No need to restore apiServerInput if not changed or saved
         }
@@ -126,6 +146,18 @@ export function toggleApiKeyVisibility() {
         } else {
             apiKeyInput.type = "password";
             toggleApiKeyBtn.textContent = "👁️";
+        }
+    }
+}
+
+export function toggleHfApiKeyVisibility() {
+    if (hfApiKeyInput && toggleHfApiKeyBtn) {
+        if (hfApiKeyInput.type === "password") {
+            hfApiKeyInput.type = "text";
+            toggleHfApiKeyBtn.textContent = "🔒";
+        } else {
+            hfApiKeyInput.type = "password";
+            toggleHfApiKeyBtn.textContent = "👁️";
         }
     }
 }
@@ -169,9 +201,41 @@ export function updateHistoryListUI(history, onPlayCallback, onRemoveCallback) {
     });
 }
 
-// --- Alerts ---
-export function showAlert(message) {
-    alert(message); // Simple alert, can be replaced with a custom modal later
+// --- Toast Notifications ---
+let toastContainer = null;
+
+function getToastContainer() {
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'fixed top-4 right-4 z-50 space-y-2';
+        document.body.appendChild(toastContainer);
+    }
+    return toastContainer;
+}
+
+export function showAlert(message, duration = 5000) {
+    const container = getToastContainer();
+    const toast = document.createElement('div');
+    toast.className = 'bg-primary text-primary-foreground px-4 py-3 rounded-md shadow-lg transform transition-all duration-300 translate-x-full';
+    toast.textContent = message;
+    
+    container.appendChild(toast);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-x-full');
+    });
+    
+    // Auto remove after duration
+    setTimeout(() => {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, duration);
 }
 
 // --- Getters for elements needed by other modules (use sparingly) ---
@@ -179,17 +243,26 @@ export function showAlert(message) {
 export function getAudioPlayerElement() { return audioPlayer; }
 export function getPlayButtonElement() { return playButton; }
 export function getApiKeyInputValue() { return apiKeyInput ? apiKeyInput.value.trim() : ''; }
+export function getHfTokenInputValue() { return hfTokenInput ? hfTokenInput.value.trim() : ''; }
 export function getApiServerInputValue() { return apiServerInput ? apiServerInput.value.trim() : ''; }
+export function getHfApiKeyInputValue() { return hfApiKeyInput ? hfApiKeyInput.value.trim() : ''; }
+export function getHfEndpointUrlInputValue() { return hfEndpointUrlInput ? hfEndpointUrlInput.value.trim() : ''; }
 export function setApiKeyInputValue(value) { if (apiKeyInput) apiKeyInput.value = value; }
+export function setHfTokenInputValue(value) { if (hfTokenInput) hfTokenInput.value = value; }
 export function setApiServerInputValue(value) { if (apiServerInput) apiServerInput.value = value; }
+export function setHfApiKeyInputValue(value) { if (hfApiKeyInput) hfApiKeyInput.value = value; }
+export function setHfEndpointUrlInputValue(value) { if (hfEndpointUrlInput) hfEndpointUrlInput.value = value; }
 export function getUrlInputValue() { return urlInput ? urlInput.value.trim() : ''; }
 export function setUrlInputValue(value) { if (urlInput) urlInput.value = value; }
 
 // --- Initial values for settings modal (to be called from script.js) ---
-export function setOriginalSettingsForModal(apiKey, apiServer) {
+export function setOriginalSettingsForModal(apiKey, hfToken, apiServer, hfApiKey, hfEndpointUrl) {
     if (settingsModal) {
         settingsModal.dataset.originalApiKey = apiKey;
+        settingsModal.dataset.originalHfToken = hfToken;
         settingsModal.dataset.originalApiServer = apiServer;
+        settingsModal.dataset.originalHfApiKey = hfApiKey;
+        settingsModal.dataset.originalHfEndpointUrl = hfEndpointUrl;
     }
 }
 
@@ -198,15 +271,24 @@ export function getOriginalApiKeyForModal() {
 }
 
 export function getOriginalApiServerForModal() {
-     return settingsModal ? settingsModal.dataset.originalApiServer : '';
+    return settingsModal ? settingsModal.dataset.originalApiServer : '';
+}
+
+export function getOriginalHfApiKeyForModal() {
+    return settingsModal ? settingsModal.dataset.originalHfApiKey : '';
+}
+
+export function getOriginalHfEndpointUrlForModal() {
+    return settingsModal ? settingsModal.dataset.originalHfEndpointUrl : '';
 }
 
 // Add a function to get all necessary elements for event listeners in script.js
 export function getElementsForEventListeners() {
     return {
-        settingsBtn, closeModalBtn, saveSettingsBtn, toggleApiKeyBtn, clearHistoryBtn,
-        apiKeyInput, // For Enter key listener
+        settingsBtn, closeModalBtn, saveSettingsBtn, toggleApiKeyBtn, toggleHfTokenBtn, hfLoginBtn, clearHistoryBtn,
+        apiKeyInput, hfTokenInput, // For Enter key listener
         settingsModal, // For Escape key and window click listener
-        generateBtn, urlInput
+        generateBtn, urlInput,
+        toggleHfApiKeyBtn, testHfConnectionBtn
     };
 }

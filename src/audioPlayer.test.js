@@ -26,7 +26,8 @@ describe('audioPlayer', () => {
       pause: vi.fn(),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
-      readyState: 0
+      readyState: 0,
+      dataset: {}
     };
 
     vi.mocked(getAudioPlayerElement).mockReturnValue(mockAudioPlayer);

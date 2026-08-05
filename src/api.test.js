@@ -15,7 +15,15 @@ describe('api', () => {
       getElementById: vi.fn().mockReturnValue({
         style: { display: 'none' },
         src: ''
-      })
+      }),
+      createElement: vi.fn().mockReturnValue({
+        textContent: '',
+        appendChild: vi.fn(),
+        parentNode: { removeChild: vi.fn() }
+      }),
+      body: {
+        appendChild: vi.fn()
+      }
     };
     global.caches = {
       open: vi.fn().mockResolvedValue({

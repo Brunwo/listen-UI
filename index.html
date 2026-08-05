@@ -66,15 +66,61 @@
             </div>
 
             <div>
+              <label for="hfToken" class="block text-sm font-medium mb-2">Hugging Face Token (Optional)</label>
+              <div class="flex gap-2 mb-2">
+                <input type="password" id="hfToken" placeholder="Enter HF Token or Login"
+                  class="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <button id="toggleHfToken"
+                  class="bg-muted text-muted-foreground px-3 py-2 rounded-md hover:bg-muted/80 border">👁️</button>
+              </div>
+              <button id="hfLoginBtn"
+                class="w-full bg-[#FFD21E] text-black font-medium py-2 rounded-md hover:bg-[#FFD21E]/90 transition-colors flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+                  <path
+                    d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" />
+                </svg>
+                Login with Hugging Face
+              </button>
+            </div>
+
+            <div>
               <label for="apiServer" class="block text-sm font-medium mb-2">API Server</label>
               <input type="text" id="apiServer" placeholder="Enter API server URL"
                 class="w-full bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+            </div>
+
+            <hr class="border-border my-4">
+
+            <h3 class="text-lg font-semibold mb-3">Hugging Face Semantic Search</h3>
+
+            <div>
+              <label for="hfApiKey" class="block text-sm font-medium mb-2">Hugging Face API Key</label>
+              <div class="flex gap-2">
+                <input type="password" id="hfApiKey" placeholder="Enter HF API key"
+                  class="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                <button id="toggleHfApiKey"
+                  class="bg-muted text-muted-foreground px-3 py-2 rounded-md hover:bg-muted/80 border">👁️</button>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <label for="hfEndpointUrl" class="block text-sm font-medium mb-2">Inference Endpoint URL</label>
+              <input type="text" id="hfEndpointUrl" placeholder="e.g., https://xyz.us-east-1.aws.endpoints.huggingface.cloud"
+                class="w-full bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              <p class="text-xs text-muted-foreground mt-1">Deploy a sentence-transformer model as an Inference Endpoint</p>
             </div>
           </div>
 
           <button id="saveSettings"
             class="w-full bg-primary text-primary-foreground py-2 rounded-md hover:bg-primary/90 transition-colors mt-6">
             Save Settings
+          </button>
+
+          <button id="testHfConnection"
+            class="w-full bg-secondary text-secondary-foreground py-2 rounded-md hover:bg-secondary/80 transition-colors mt-3">
+            Test HF Connection
           </button>
         </div>
       </div>

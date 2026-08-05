@@ -1,3 +1,15 @@
+/**
+ * Sanitizes a string to prevent XSS attacks by escaping HTML entities.
+ * @param {string} str - The string to sanitize
+ * @returns {string} The sanitized string safe for HTML insertion
+ */
+export function sanitizeHtml(str) {
+    if (typeof str !== 'string') return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 export function checkOnlineStatus() {
     if (!navigator.onLine) {
         alert('You are currently offline. Some features may be limited.');
@@ -10,7 +22,8 @@ export function handleSharedUrl() {
 
     if (sharedUrl) {
         console.log('Shared URL detected:', sharedUrl);
-        return sharedUrl;
+        // Basic sanitization - trim whitespace
+        return sharedUrl.trim();
     }
     return null;
 }

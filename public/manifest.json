@@ -33,5 +33,5 @@
         "url": "url"
       }
     },
-    "offline_page": "/listen-UI/offline.html"
+    "offline_page": "offline.html"
 }

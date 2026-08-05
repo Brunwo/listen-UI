@@ -1,0 +1,19 @@
+{
+  "name": "huggingface-skill",
+  "version": "1.0.0",
+  "description": "Hugging Face skill: CLI for model/space search, inference endpoints, and semantic search",
+  "type": "module",
+  "bin": {
+    "hf-skill": "./cli/index.js"
+  },
+  "scripts": {
+    "search-models": "node cli/index.js search-models",
+    "search-spaces": "node cli/index.js search-spaces",
+    "model-details": "node cli/index.js model-details",
+    "list-endpoints": "node cli/index.js list-endpoints",
+    "embed": "node cli/index.js embed",
+    "discover": "node cli/index.js discover",
+    "semantic-search": "node cli/index.js semantic-search"
+  },
+  "license": "ISC"
+}

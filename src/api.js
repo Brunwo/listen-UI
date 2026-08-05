@@ -3,7 +3,7 @@ import { audioCache, saveAudioCache } from './audioCache.js';
 import { loadAudioFromCache, updateMediaSessionMetadata } from './audioPlayer.js';
 // No direct UI imports here, ui.js showAlert can be called from script.js if needed
 
-const DEFAULT_API_SERVER = "Mightypeacock/webtoaudio";
+export const DEFAULT_API_SERVER = "Mightypeacock/webtoaudio";
 
 /**
  * @typedef {Object} FetchMp3Result
@@ -68,6 +68,13 @@ export async function fetchMp3(link, onProgress) {
             const job = client.submit("/generate_audio", payload);
             let finalDataReceived = false;
 
+            // Add timeout to prevent hanging indefinitely
+            const timeoutId = setTimeout(() => {
+                if (!finalDataReceived) {
+                    reject(new Error('Request timed out. The audio generation is taking too long. Please try again.'));
+                }
+            }, 120000); // 2 minute timeout
+
             job.on("status", (statusEvent) => {
                 console.log("Job status update:", statusEvent);
                 let progressMessage = `Status: ${statusEvent.stage}`;
@@ -106,6 +113,7 @@ export async function fetchMp3(link, onProgress) {
 
                 if (outputData && Array.isArray(outputData) && outputData.length >= 2 && outputData[0]?.url) {
                     finalDataReceived = true;
+                    clearTimeout(timeoutId);
                     const audioFileUrl = outputData[0].url;
                     const transcription = outputData[1];
 

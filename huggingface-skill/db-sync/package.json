@@ -1,0 +1,11 @@
+{
+  "name": "hf-db-sync",
+  "version": "1.0.0",
+  "description": "Cronable script to sync best HF models and zero-GPU spaces into a local SQLite DB",
+  "type": "module",
+  "scripts": {
+    "sync": "node sync-db.js",
+    "query": "node query-db.js"
+  },
+  "license": "ISC"
+}

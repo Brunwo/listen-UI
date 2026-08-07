@@ -105,6 +105,7 @@ node cli/index.js semantic-search "machine learning" --documents "Neural network
 
 - `docs/tts-zero-gpu-endpoints.md` — Best free ZeroGPU TTS inference endpoints (researched via `hf` CLI).
 - `docs/endpoint-findings.md` — REST API quirks, free providers, and best endpoints per use case.
+- `docs/mcp-skills-inference.md` — MCP server setup, Skills registry, and Inference Endpoint deployment.
 
 ## Local DB Sync (cronable)
 

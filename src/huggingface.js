@@ -1,21 +1,111 @@
 /**
  * Hugging Face API client for semantic search and inference endpoints
  */
+
+/**
+ * Default free text-embedding endpoint (HF Inference free tier).
+ * Works with any valid HF token — no dedicated inference endpoint required.
+ */
+export const DEFAULT_HF_ENDPOINT_URL =
+  'https://api-inference.huggingface.co/models/mixedbread-ai/mxbai-embed-large-v1';
+
 class HuggingFaceClient {
   constructor() {
-    this.apiKey = localStorage.getItem('hf_api_key') || '';
+    this.apiKey =
+      localStorage.getItem('hf_api_key') || localStorage.getItem('hf_token') || '';
     this.endpointUrl = localStorage.getItem('hf_endpoint_url') || '';
   }
 
   setApiKey(apiKey) {
     this.apiKey = apiKey;
     localStorage.setItem('hf_api_key', apiKey);
-    this.init();
   }
 
   setEndpointUrl(url) {
     this.endpointUrl = url;
     localStorage.setItem('hf_endpoint_url', url);
+  }
+
+  /**
+   * Resolve the endpoint to use: a custom configured endpoint if set,
+   * otherwise the free default embedding endpoint.
+   * @returns {string}
+   */
+  getEffectiveEndpointUrl() {
+    return this.endpointUrl || DEFAULT_HF_ENDPOINT_URL;
+  }
+
+  /**
+   * Smoke test: verify the HF token against the Hub API (whoami).
+   * Works with just an API key/token — no endpoint required.
+   * @returns {Promise<Object>} The whoami-v2 user/org payload.
+   */
+  async smokeTest() {
+    if (!this.apiKey) {
+      throw new Error('Hugging Face API key not configured');
+    }
+
+    const response = await fetch('https://huggingface.co/api/whoami-v2', {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Hugging Face token rejected (HTTP ${response.status})`);
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Full connection test:
+   * 1. Validate the token against the Hub API (smoke test).
+   * 2. If an endpoint is available (custom or default), POST an embedding to verify it.
+   * The token result is the primary signal; an unreachable endpoint is reported,
+   * not fatal, so a plain token check still succeeds.
+   * @param {string} [endpointUrl] - Optional endpoint to test (uses custom/default otherwise).
+   * @returns {Promise<{tokenValid: boolean, user: string, endpointTested: boolean, endpointUrl: string}>}
+   */
+  async testConnection(endpointUrl) {
+    const userInfo = await this.smokeTest();
+    const url = endpointUrl || this.getEffectiveEndpointUrl();
+    let endpointTested = false;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      let response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ inputs: 'test' }),
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (!response.ok) {
+        console.warn('HF endpoint embedding check failed:', `HTTP ${response.status}`);
+      } else {
+        await response.json();
+        endpointTested = true;
+      }
+    } catch (err) {
+      console.warn('HF endpoint embedding check failed:', err.message);
+    }
+
+    return {
+      tokenValid: true,
+      user: userInfo?.name || userInfo?.org || 'validated',
+      endpointTested,
+      endpointUrl: url
+    };
   }
 
   /**
@@ -108,15 +198,11 @@ class HuggingFaceClient {
    * @param {string} text - Input text for embedding
    */
   async getEmbedding(text) {
-    if (!this.endpointUrl) {
-      throw new Error('Inference endpoint URL not configured');
-    }
-
     if (!this.apiKey) {
       throw new Error('Hugging Face API key not configured');
     }
 
-    const response = await fetch(this.endpointUrl, {
+    const response = await fetch(this.getEffectiveEndpointUrl(), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -139,10 +225,6 @@ class HuggingFaceClient {
    * @param {number} topK - Number of top results to return
    */
   async semanticSearch(query, documents, topK = 5) {
-    if (!this.endpointUrl) {
-      throw new Error('Inference endpoint URL not configured');
-    }
-
     // Get embeddings for query and documents
     const [queryEmbedding, docEmbeddings] = await Promise.all([
       this.getEmbedding(query),

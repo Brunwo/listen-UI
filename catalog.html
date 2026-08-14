@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HF Catalog — Model & Space Explorer</title>
+  <meta name="theme-color" content="#1a1a1a">
+  <link rel="stylesheet" href="global.css">
+  <style>
+    .catalog-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    .catalog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .catalog-header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+    .catalog-header .back-link {
+      color: var(--muted-foreground, #a1a1aa);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .catalog-header .back-link:hover {
+      color: var(--foreground, #fafafa);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .controls select,
+    .controls input,
+    .controls button {
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--border, #27272a);
+      background: var(--input, #18181b);
+      color: var(--foreground, #fafafa);
+      font-size: 0.875rem;
+    }
+    .controls input {
+      flex: 1;
+      min-width: 200px;
+    }
+    .controls button {
+      background: var(--primary, #3b82f6);
+      color: var(--primary-foreground, #fff);
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .controls button:hover {
+      opacity: 0.9;
+    }
+    .controls label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.875rem;
+      color: var(--muted-foreground, #a1a1aa);
+    }
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border, #27272a);
+      padding-bottom: 0.5rem;
+    }
+    .tabs button {
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted-foreground, #a1a1aa);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .tabs button.active {
+      background: var(--primary, #3b82f6);
+      color: var(--primary-foreground, #fff);
+    }
+    .tabs button:not(.active):hover {
+      color: var(--foreground, #fafafa);
+      border-color: var(--border, #27272a);
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border, #27272a);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    thead {
+      background: var(--muted, #27272a);
+    }
+    th {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      font-weight: 600;
+      color: var(--muted-foreground, #a1a1aa);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    th:hover {
+      color: var(--foreground, #fafafa);
+    }
+    td {
+      padding: 0.6rem 0.75rem;
+      border-top: 1px solid var(--border, #27272a);
+      vertical-align: top;
+    }
+    tr:hover td {
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .model-id {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+      word-break: break-all;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: var(--muted, #27272a);
+      color: var(--muted-foreground, #a1a1aa);
+      margin-right: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+    .badge.zero-gpu {
+      background: #16a34a;
+      color: #fff;
+    }
+    .badge.running {
+      background: #16a34a;
+      color: #fff;
+    }
+    .badge.sleeping {
+      background: #d97706;
+      color: #fff;
+    }
+    .badge.error {
+      background: #dc2626;
+      color: #fff;
+    }
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted-foreground, #a1a1aa);
+    }
+    .loading {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted-foreground, #a1a1aa);
+    }
+    .error-banner {
+      background: #dc2626;
+      color: #fff;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--card, #18181b);
+      border: 1px solid var(--border, #27272a);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+    }
+    .stat-card .stat-name {
+      font-size: 0.75rem;
+      color: var(--muted-foreground, #a1a1aa);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stat-card .stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-top: 0.25rem;
+    }
+    .stat-card .stat-sub {
+      font-size: 0.75rem;
+      color: var(--muted-foreground, #a1a1aa);
+      margin-top: 0.25rem;
+    }
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .pagination button {
+      padding: 0.4rem 0.9rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--border, #27272a);
+      background: var(--input, #18181b);
+      color: var(--foreground, #fafafa);
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .pagination span {
+      font-size: 0.85rem;
+      color: var(--muted-foreground, #a1a1aa);
+    }
+    .providers {
+      font-size: 0.75rem;
+      color: var(--muted-foreground, #a1a1aa);
+      word-break: break-all;
+    }
+    .sort-indicator {
+      font-size: 0.7rem;
+      margin-left: 0.25rem;
+    }
+  </style>
+</head>
+
+<body class="bg-background text-foreground min-h-screen">
+  <div class="catalog-container">
+    <div class="catalog-header">
+      <div>
+        <h1>HF Catalog Explorer</h1>
+        <p class="text-sm text-muted-foreground mt-1">Best models & Spaces synced from Hugging Face</p>
+      </div>
+      <a href="index.html" class="back-link">← Back to Player</a>
+    </div>
+
+    <div id="errorBanner" class="error-banner hidden"></div>
+
+    <!-- Stats overview -->
+    <div id="statsGrid" class="stats-grid"></div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <select id="modalitySelect" aria-label="Modality">
+        <option value="">All modalities</option>
+      </select>
+      <input type="text" id="searchInput" placeholder="Search models / spaces..." aria-label="Search">
+      <label>
+        <input type="checkbox" id="zeroGpuOnly">
+        ZeroGPU only
+      </label>
+      <button id="applyBtn">Apply</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button id="tabModels" class="active">Models</button>
+      <button id="tabSpaces">Spaces</button>
+      <button id="tabRecent">Recent Sync</button>
+    </div>
+
+    <!-- Table container -->
+    <div id="tableContainer">
+      <div class="loading">Loading...</div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <button id="prevPage" disabled>← Prev</button>
+      <span id="pageInfo">Page 1</span>
+      <button id="nextPage" disabled>Next →</button>
+    </div>
+  </div>
+
+  <script type="module">
+    // --- Config ---
+    const API_BASE = localStorage.getItem('hfCatalogApiBase') || 'http://localhost:8787';
+    const PAGE_SIZE = 50;
+
+    // --- State ---
+    const state = {
+      tab: 'models',
+      modality: '',
+      search: '',
+      zeroGpu: false,
+      sort: 'trending',
+      page: 1,
+      total: 0
+    };
+
+    // --- DOM refs ---
+    const $ = (id) => document.getElementById(id);
+    const errorBanner = $('errorBanner');
+    const statsGrid = $('statsGrid');
+    const modalitySelect = $('modalitySelect');
+    const searchInput = $('searchInput');
+    const zeroGpuOnly = $('zeroGpuOnly');
+    const applyBtn = $('applyBtn');
+    const tabModels = $('tabModels');
+    const tabSpaces = $('tabSpaces');
+    const tabRecent = $('tabRecent');
+    const tableContainer = $('tableContainer');
+    const prevPage = $('prevPage');
+    const nextPage = $('nextPage');
+    const pageInfo = $('pageInfo');
+
+    // --- Helpers ---
+    function showError(msg) {
+      errorBanner.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+    function clearError() {
+      errorBanner.classList.add('hidden');
+    }
+    function formatNumber(n) {
+      if (n === null || n === undefined) return '—';
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+      return String(n);
+    }
+    function formatDate(iso) {
+      if (!iso) return '—';
+      try {
+        return new Date(iso).toLocaleString();
+      } catch {
+        return iso;
+      }
+    }
+    // Build HTML entities at runtime so formatters can't corrupt them.
+    const AMP = String.fromCharCode(38);   // &
+    const LT = String.fromCharCode(60);    // <
+    const GT = String.fromCharCode(62);    // >
+    const QUOT = String.fromCharCode(34);  // "
+    const APOS = String.fromCharCode(39);  // '
+    const HTML_ENTITIES = {
+      [AMP]: AMP + 'amp;',
+      [LT]: LT + 'lt;',
+      [GT]: GT + 'gt;',
+      [QUOT]: QUOT + 'quot;',
+      [APOS]: APOS + '#39;'
+    };
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/[&<>"']/g, (ch) => HTML_ENTITIES[ch]);
+    }
+    function buildQuery() {
+      const params = new URLSearchParams();
+      if (state.modality) params.set('modality', state.modality);
+      if (state.search) params.set('search', state.search);
+      if (state.zeroGpu) params.set('zero-gpu', 'true');
+      params.set('limit', String(PAGE_SIZE));
+      if (state.tab === 'models') params.set('sort', state.sort);
+      return params.toString();
+    }
+
+    // --- Data fetching ---
+    async function fetchJson(path) {
+      const res = await fetch(`${API_BASE}${path}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    }
+
+    async function loadModalities() {
+      try {
+        const rows = await fetchJson('/api/modalities');
+        modalitySelect.innerHTML = '<option value="">All modalities</option>' +
+          rows.map(r => `<option value="${escapeHtml(r.modality)}">${escapeHtml(r.modality)} (${r.model_count})</option>`).join('');
+      } catch (err) {
+        showError(`Failed to load modalities: ${err.message}`);
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const rows = await fetchJson('/api/stats');
+        const totalModels = rows.reduce((s, r) => s + (r.model_count || 0), 0);
+        const totalSpaces = rows.reduce((s, r) => s + (r.space_count || 0), 0);
+        const lastSync = rows.reduce((latest, r) => {
+          const t = r.last_model_sync || r.last_space_sync;
+          return t && (!latest || t > latest) ? t : latest;
+        }, null);
+
+        statsGrid.innerHTML = `
+          <div class="stat-card">
+            <div class="stat-name">Modalities</div>
+            <div class="stat-value">${rows.length}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-name">Models</div>
+            <div class="stat-value">${formatNumber(totalModels)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-name">Spaces</div>
+            <div class="stat-value">${formatNumber(totalSpaces)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-name">Last Sync</div>
+            <div class="stat-value text-sm">${escapeHtml(formatDate(lastSync))}</div>
+          </div>
+        `;
+      } catch (err) {
+        // Non-fatal; stats are supplementary
+        console.warn('Failed to load stats:', err.message);
+      }
+    }
+
+    // --- Rendering ---
+    function renderModels(rows) {
+      if (!rows.length) {
+        tableContainer.innerHTML = '<div class="empty">No models found.</div>';
+        return;
+      }
+      const headers = [
+        { key: 'id', label: 'Model' },
+        { key: 'likes', label: 'Likes' },
+        { key: 'downloads', label: 'Downloads' },
+        { key: 'trending_score', label: 'Trending' },
+        { key: 'inference_providers', label: 'Providers' },
+        { key: 'updated_at', label: 'Updated' }
+      ];
+      const sortable = ['likes', 'downloads', 'trending_score'];
+      const thead = headers.map(h => {
+        const isSortable = sortable.includes(h.key);
+        const isActive = state.sort === h.key;
+        return `<th data-sort="${h.key}" ${isSortable ? 'class="sortable"' : ''}>
+          ${h.label}${isSortable ? `<span class="sort-indicator">${isActive ? (state.sortDir === 'asc' ? '▲' : '▼') : ''}</span>` : ''}
+        </th>`;
+      }).join('');
+
+      const tbody = rows.map(r => `
+        <tr>
+          <td class="model-id">${escapeHtml(r.id)}</td>
+          <td class="num">${formatNumber(r.likes)}</td>
+          <td class="num">${formatNumber(r.downloads)}</td>
+          <td class="num">${r.trending_score != null ? Number(r.trending_score).toFixed(1) : '—'}</td>
+          <td class="providers">${escapeHtml(r.inference_providers || '—')}</td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(formatDate(r.updated_at))}</td>
+        </tr>
+      `).join('');
+
+      tableContainer.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead><tr>${thead}</tr></thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+      `;
+
+      // Attach sort handlers
+      document.querySelectorAll('th.sortable').forEach(th => {
+        th.addEventListener('click', () => {
+          const key = th.dataset.sort;
+          if (state.sort === key) {
+            state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+          } else {
+            state.sort = key;
+            state.sortDir = 'desc';
+          }
+          state.page = 1;
+          loadTable();
+        });
+      });
+    }
+
+    function renderSpaces(rows) {
+      if (!rows.length) {
+        tableContainer.innerHTML = '<div class="empty">No spaces found.</div>';
+        return;
+      }
+      const tbody = rows.map(r => {
+        const hardwareClass = r.hardware && r.hardware.startsWith('zero-') ? 'zero-gpu' : '';
+        const stageClass = r.stage === 'RUNNING' ? 'running' : r.stage === 'SLEEPING' ? 'sleeping' : r.stage === 'RUNTIME_ERROR' ? 'error' : '';
+        return `
+        <tr>
+          <td class="model-id">${escapeHtml(r.id)}</td>
+          <td>${escapeHtml(r.title || '—')}</td>
+          <td class="num">${formatNumber(r.likes)}</td>
+          <td>
+            ${r.hardware ? `<span class="badge ${hardwareClass}">${escapeHtml(r.hardware)}</span>` : ''}
+            ${r.stage ? `<span class="badge ${stageClass}">${escapeHtml(r.stage)}</span>` : ''}
+          </td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(r.host || '—')}</td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(formatDate(r.updated_at))}</td>
+        </tr>
+      `;
+      }).join('');
+
+      tableContainer.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Space</th>
+              <th>Title</th>
+              <th>Likes</th>
+              <th>Hardware / Stage</th>
+              <th>Host</th>
+              <th>Updated</th>
+            </tr></thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderRecent(rows) {
+      if (!rows.length) {
+        tableContainer.innerHTML = '<div class="empty">No sync log entries.</div>';
+        return;
+      }
+      const tbody = rows.map(r => `
+        <tr>
+          <td class="num">${r.id}</td>
+          <td>${escapeHtml(r.modality)}</td>
+          <td><span class="badge">${escapeHtml(r.type)}</span></td>
+          <td class="num">${r.count}</td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(formatDate(r.synced_at))}</td>
+        </tr>
+      `).join('');
+
+      tableContainer.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th>
+              <th>Modality</th>
+              <th>Type</th>
+              <th>Count</th>
+              <th>Synced At</th>
+            </tr></thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // --- Main load ---
+    async function loadTable() {
+      clearError();
+      tableContainer.innerHTML = '<div class="loading">Loading...</div>';
+
+      try {
+        let rows;
+        if (state.tab === 'models') {
+          rows = await fetchJson(`/api/models?${buildQuery()}`);
+          renderModels(rows);
+        } else if (state.tab === 'spaces') {
+          rows = await fetchJson(`/api/spaces?${buildQuery()}`);
+          renderSpaces(rows);
+        } else {
+          rows = await fetchJson('/api/recent');
+          renderRecent(rows);
+        }
+
+        // Pagination (only meaningful for models/spaces)
+        const isPaginated = state.tab !== 'recent';
+        prevPage.disabled = !isPaginated || state.page <= 1;
+        nextPage.disabled = !isPaginated || rows.length < PAGE_SIZE;
+        pageInfo.textContent = isPaginated ? `Page ${state.page}` : '';
+      } catch (err) {
+        showError(`Failed to load data: ${err.message}`);
+        tableContainer.innerHTML = '<div class="empty">No data available.</div>';
+      }
+    }
+
+    // --- Event wiring ---
+    function setTab(tab) {
+      state.tab = tab;
+      state.page = 1;
+      tabModels.classList.toggle('active', tab === 'models');
+      tabSpaces.classList.toggle('active', tab === 'spaces');
+      tabRecent.classList.toggle('active', tab === 'recent');
+      loadTable();
+    }
+
+    tabModels.addEventListener('click', () => setTab('models'));
+    tabSpaces.addEventListener('click', () => setTab('spaces'));
+    tabRecent.addEventListener('click', () => setTab('recent'));
+
+    applyBtn.addEventListener('click', () => {
+      state.modality = modalitySelect.value;
+      state.search = searchInput.value.trim();
+      state.zeroGpu = zeroGpuOnly.checked;
+      state.page = 1;
+      loadTable();
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') applyBtn.click();
+    });
+
+    prevPage.addEventListener('click', () => {
+      if (state.page > 1) {
+        state.page--;
+        loadTable();
+      }
+    });
+
+    nextPage.addEventListener('click', () => {
+      state.page++;
+      loadTable();
+    });
+
+    // --- Init ---
+    loadModalities();
+    loadStats();
+    loadTable();
+  </script>
+</body>
+
+</html>

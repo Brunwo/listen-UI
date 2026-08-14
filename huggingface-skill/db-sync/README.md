@@ -43,6 +43,32 @@ node query-db.js search whisper
 node query-db.js recent
 ```
 
+## API Server
+
+Expose the DB as a JSON REST API for the frontend:
+
+```bash
+node server.js
+# or
+npm run server
+# Custom port / DB:
+PORT=9000 HF_DB_PATH=/path/to/hf_catalog.db node server.js
+```
+
+Endpoints (all GET, CORS-enabled):
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/health` | Health check |
+| `/api/modalities` | All synced modalities with model/space counts |
+| `/api/models?modality=X&sort=trending&limit=50&search=...` | List models |
+| `/api/spaces?modality=X&limit=50&search=...&zero-gpu=true` | List spaces |
+| `/api/search?q=whisper&limit=20` | Search models by keyword |
+| `/api/recent` | Recent sync log |
+| `/api/stats` | Per-modality counts and last sync times |
+
+The frontend catalog page (`catalog.html` at the repo root) consumes this API. It defaults to `http://localhost:8787`; override with `localStorage.setItem('hfCatalogApiBase', 'http://host:port')`.
+
 ## Cron
 
 Run daily:

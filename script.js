@@ -14,7 +14,7 @@ import {
 } from './src/audioPlayer.js';
 import { fetchMp3 as fetchAudioData, DEFAULT_API_SERVER } from './src/api.js'; // Renamed for clarity
 import { handleSharedUrl } from './src/utils.js'; // checkOnlineStatus might be useful later
-import huggingfaceClient from './src/huggingface.js';
+import huggingfaceClient, { DEFAULT_HF_ENDPOINT_URL } from './src/huggingface.js';
 
 import * as ui from './src/ui.js';
 
@@ -93,17 +93,23 @@ document.addEventListener("DOMContentLoaded", async function () {
     const savedApiKey = localStorage.getItem('openaiApiKey') || '';
     const savedApiServer = localStorage.getItem('apiServer') || DEFAULT_API_SERVER;
     const savedHfApiKey = localStorage.getItem('hf_api_key') || '';
+    const savedHfToken = localStorage.getItem('hf_token') || '';
     const savedHfEndpointUrl = localStorage.getItem('hf_endpoint_url') || '';
-    
+
+    // A valid HF token can be saved in either the "API Key" or "Token" field — prefer
+    // the dedicated API Key field, fall back to the Token field.
+    const savedHfKey = savedHfApiKey || savedHfToken;
+
     ui.setApiKeyInputValue(savedApiKey);
     ui.setApiServerInputValue(savedApiServer);
     ui.setHfApiKeyInputValue(savedHfApiKey);
-    ui.setHfEndpointUrlInputValue(savedHfEndpointUrl);
+    ui.setHfTokenInputValue(savedHfToken);
+    ui.setHfEndpointUrlInputValue(savedHfEndpointUrl || DEFAULT_HF_ENDPOINT_URL);
     ui.setOriginalSettingsForModal(savedApiKey, '', savedApiServer, savedHfApiKey, savedHfEndpointUrl); // Store for modal 'cancel'
     
     // Initialize Hugging Face client with saved settings
-    if (savedHfApiKey) {
-        huggingfaceClient.setApiKey(savedHfApiKey);
+    if (savedHfKey) {
+        huggingfaceClient.setApiKey(savedHfKey);
     }
     if (savedHfEndpointUrl) {
         huggingfaceClient.setEndpointUrl(savedHfEndpointUrl);
@@ -134,20 +140,33 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (eventListenerElements.testHfConnectionBtn) {
         eventListenerElements.testHfConnectionBtn.onclick = async function () {
+            // A token entered in either the "API Key" or "Token" field works.
             const hfApiKey = ui.getHfApiKeyInputValue();
+            const hfToken = ui.getHfTokenInputValue();
+            const hfKey = hfApiKey || hfToken;
             const hfEndpointUrl = ui.getHfEndpointUrlInputValue();
-            
-            if (!hfApiKey || !hfEndpointUrl) {
-                ui.showAlert('Please enter both Hugging Face API key and Endpoint URL.');
+
+            if (!hfKey) {
+                ui.showAlert('Please enter a Hugging Face API key or token.');
                 return;
             }
-            
+
+            // Temporarily use the entered values for this test (without saving yet)
+            huggingfaceClient.apiKey = hfKey;
+            huggingfaceClient.endpointUrl = hfEndpointUrl;
+
             ui.showLoading('Testing HF connection...');
             try {
-                // Test by attempting to get an embedding
-                const testResult = await huggingfaceClient.getEmbedding('test');
-                console.log('HF Connection test result:', testResult);
-                ui.showAlert('Hugging Face connection successful!');
+                // Token smoke test first (works with just a key), then tries the
+                // endpoint if one is configured — defaulting to the free embedding endpoint.
+                const result = await huggingfaceClient.testConnection(
+                    hfEndpointUrl || DEFAULT_HF_ENDPOINT_URL
+                );
+                console.log('HF Connection test result:', result);
+                const endpointNote = result.endpointTested
+                    ? ` (endpoint verified: ${result.endpointUrl})`
+                    : ` (endpoint not checked: ${result.endpointUrl})`;
+                ui.showAlert(`Hugging Face token valid as "${result.user}"!${endpointNote}`);
             } catch (error) {
                 console.error('HF Connection test failed:', error);
                 ui.showAlert(`HF connection failed: ${error.message}`);
@@ -162,27 +181,34 @@ document.addEventListener("DOMContentLoaded", async function () {
             const apiKey = ui.getApiKeyInputValue();
             const apiServer = ui.getApiServerInputValue();
             const hfApiKey = ui.getHfApiKeyInputValue();
+            const hfToken = ui.getHfTokenInputValue();
             const hfEndpointUrl = ui.getHfEndpointUrlInputValue();
-            
+
+            // Save Hugging Face settings independently from OpenAI settings.
+            const hfKey = hfApiKey || hfToken;
+            if (hfKey) {
+                localStorage.setItem('hf_api_key', hfApiKey);
+                localStorage.setItem('hf_token', hfToken);
+                huggingfaceClient.setApiKey(hfKey);
+            }
+            // Only persist a custom endpoint; the free default is implicit and
+            // can be updated in code without stale localStorage overrides.
+            if (hfEndpointUrl && hfEndpointUrl !== DEFAULT_HF_ENDPOINT_URL) {
+                localStorage.setItem('hf_endpoint_url', hfEndpointUrl);
+                huggingfaceClient.setEndpointUrl(hfEndpointUrl);
+            } else {
+                localStorage.removeItem('hf_endpoint_url');
+                huggingfaceClient.setEndpointUrl('');
+            }
+
             if (apiKey && apiServer) {
                 localStorage.setItem('openaiApiKey', apiKey);
                 localStorage.setItem('apiServer', apiServer);
-                
-                // Save Hugging Face settings
-                if (hfApiKey) {
-                    localStorage.setItem('hf_api_key', hfApiKey);
-                    huggingfaceClient.setApiKey(hfApiKey);
-                }
-                if (hfEndpointUrl) {
-                    localStorage.setItem('hf_endpoint_url', hfEndpointUrl);
-                    huggingfaceClient.setEndpointUrl(hfEndpointUrl);
-                }
-                
                 ui.setOriginalSettingsForModal(apiKey, '', apiServer, hfApiKey, hfEndpointUrl); // Update "original" to current saved
                 ui.showAlert('Settings saved successfully!');
                 ui.closeSettingsModal(false); // false, don't restore, they are saved
             } else {
-                ui.showAlert('Please enter both a valid API key and API server.');
+                ui.showAlert('OpenAI settings incomplete — saved Hugging Face settings only. Please enter both a valid API key and API server.');
             }
         };
     }

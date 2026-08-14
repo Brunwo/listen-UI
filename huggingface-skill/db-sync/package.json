@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "sync": "node sync-db.js",
-    "query": "node query-db.js"
+    "query": "node query-db.js",
+    "server": "node server.js"
   },
   "license": "ISC"
 }

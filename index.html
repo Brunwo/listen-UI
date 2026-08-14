@@ -39,6 +39,12 @@
       Settings
     </button>
 
+    <!-- Catalog Link -->
+    <a href="catalog.html"
+      class="inline-block bg-secondary text-secondary-foreground px-6 py-3 rounded-md hover:bg-secondary/80 transition-colors border text-center">
+      HF Catalog
+    </a>
+
     <!-- Transcription Container -->
     <div id="transcriptionContainer" class="bg-card rounded-lg p-6 shadow-lg border hidden">
       <h2 class="text-xl font-semibold mb-4 border-b pb-2">Transcription</h2>
@@ -66,7 +72,7 @@
             </div>
 
             <div>
-              <label for="hfToken" class="block text-sm font-medium mb-2">Hugging Face Token (Optional)</label>
+              <label for="hfToken" class="block text-sm font-medium mb-2">Hugging Face Token (Optional — works alone for smoke test)</label>
               <div class="flex gap-2 mb-2">
                 <input type="password" id="hfToken" placeholder="Enter HF Token or Login"
                   class="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
@@ -96,7 +102,7 @@
             <h3 class="text-lg font-semibold mb-3">Hugging Face Semantic Search</h3>
 
             <div>
-              <label for="hfApiKey" class="block text-sm font-medium mb-2">Hugging Face API Key</label>
+              <label for="hfApiKey" class="block text-sm font-medium mb-2">Hugging Face API Key (or use the Token above)</label>
               <div class="flex gap-2">
                 <input type="password" id="hfApiKey" placeholder="Enter HF API key"
                   class="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
@@ -106,10 +112,10 @@
             </div>
 
             <div class="mt-3">
-              <label for="hfEndpointUrl" class="block text-sm font-medium mb-2">Inference Endpoint URL</label>
+              <label for="hfEndpointUrl" class="block text-sm font-medium mb-2">Inference Endpoint URL (optional)</label>
               <input type="text" id="hfEndpointUrl" placeholder="e.g., https://xyz.us-east-1.aws.endpoints.huggingface.cloud"
                 class="w-full bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-              <p class="text-xs text-muted-foreground mt-1">Deploy a sentence-transformer model as an Inference Endpoint</p>
+              <p class="text-xs text-muted-foreground mt-1">Leave empty to use the free embedding endpoint (mixedbread-ai/mxbai-embed-large-v1). Deploy your own sentence-transformer model to use a custom endpoint.</p>
             </div>
           </div>
 
@@ -120,7 +126,7 @@
 
           <button id="testHfConnection"
             class="w-full bg-secondary text-secondary-foreground py-2 rounded-md hover:bg-secondary/80 transition-colors mt-3">
-            Test HF Connection
+            Test HF Connection (token smoke test)
           </button>
         </div>
       </div>

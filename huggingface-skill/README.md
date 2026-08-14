@@ -122,3 +122,24 @@ See `db-sync/README.md` for full usage and cron setup.
 ## Integration
 
 The browser client in the parent app (`src/huggingface.js`) uses the same endpoints for web UI features. This CLI is for quick testing and debugging.
+
+
+
+## Sync Data & Change Tracking (implemented)
+
+When syncing, the following fields are saved for each entity:
+
+- **Models**: `likes`, `trendingScore` (as `trending_score`), `downloads`, all `tags`, `createdAt` (as `created_at`), `library_name`, `inference_providers`.
+- **Spaces**: `likes`, `title`, `sdk`, `hardware`, `stage`, `host`, `models`, `modelId` (as `model_id`).
+
+Each sync logs per-entity changes in the `sync_changes` table so you can see how models/spaces move in the rankings over time:
+
+- `added` — new entity in the top ranking
+- `updated` — same rank, refreshed data
+- `moved_up` / `moved_down` — rank changed (with `prev_rank` → `rank`)
+- `dropped` — was in the previous sync for a modality but no longer present (marked `status='dropped'`)
+
+Entities are versioned with `rank`, `prev_rank`, and `status` columns. See `db-sync/README.md` for the API endpoints and query commands.
+
+> Tip: To see how to call a Space via its API, query the Space's `/gradio_api/info` endpoint for a client-code example, e.g. `https://qwen-qwen3-tts.hf.space/gradio_api/info`.
+

@@ -30,6 +30,7 @@ Commands:
   providers <modality>          Models with live inference providers
   search <query>                Search models by keyword
   recent                        Recent sync log
+  changes [modality]            Recent sync changes (added/updated/moved/dropped)
   help                          Show this help
 
 Examples:
@@ -38,6 +39,7 @@ Examples:
   node query-db.js zero-gpu text-to-speech
   node query-db.js providers text-embedding
   node query-db.js search whisper
+  node query-db.js changes text-to-speech
 `);
 }
 
@@ -51,14 +53,14 @@ switch (command) {
 
   case 'best-models':
     if (!arg) { showHelp(); break; }
-    console.log(sql(`SELECT id, likes, downloads, trending_score, inference_providers
+    console.log(sql(`SELECT id, likes, downloads, trending_score, rank, prev_rank, status, created_at, library_name, inference_providers
       FROM models WHERE modality='${arg}'
       ORDER BY trending_score DESC LIMIT 10;`));
     break;
 
   case 'best-spaces':
     if (!arg) { showHelp(); break; }
-    console.log(sql(`SELECT id, title, likes, hardware, stage, host
+    console.log(sql(`SELECT id, title, likes, hardware, stage, host, model_id, rank, prev_rank, status
       FROM spaces WHERE modality='${arg}'
       ORDER BY likes DESC LIMIT 10;`));
     break;
@@ -79,7 +81,7 @@ switch (command) {
 
   case 'search':
     if (!arg) { showHelp(); break; }
-    console.log(sql(`SELECT id, modality, likes, trending_score
+    console.log(sql(`SELECT id, modality, likes, trending_score, rank, status
       FROM models WHERE id LIKE '%${arg}%'
       ORDER BY trending_score DESC LIMIT 10;`));
     break;
@@ -87,6 +89,17 @@ switch (command) {
   case 'recent':
     console.log(sql(`SELECT modality, type, count, synced_at
       FROM sync_log ORDER BY id DESC LIMIT 20;`));
+    break;
+
+  case 'changes':
+    if (arg) {
+      console.log(sql(`SELECT modality, type, entity_id, change, rank, prev_rank, synced_at
+        FROM sync_changes WHERE modality='${arg}'
+        ORDER BY id DESC LIMIT 30;`));
+    } else {
+      console.log(sql(`SELECT modality, type, entity_id, change, rank, prev_rank, synced_at
+        FROM sync_changes ORDER BY id DESC LIMIT 30;`));
+    }
     break;
 
   default:

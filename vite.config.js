@@ -30,7 +30,10 @@ export default defineConfig(({ command, mode }) => {
         devOptions: {
           enabled: true,
           type: 'module',
-          navigateFallback: 'index.html'
+          navigateFallback: 'index.html',
+          // Don't redirect direct .html navigation (catalog.html, detail.html, etc.)
+          // to index.html — let them be served as real pages.
+          navigateFallbackDenylist: [/\.html$/]
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}']

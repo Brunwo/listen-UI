@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HF Catalog — Detail</title>
+  <meta name="theme-color" content="#1a1a1a">
+  <link rel="stylesheet" href="global.css">
+  <style>
+    .detail-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    .detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .detail-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      word-break: break-all;
+    }
+    .detail-header .back-link {
+      color: var(--muted-foreground, #a1a1aa);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .detail-header .back-link:hover {
+      color: var(--foreground, #fafafa);
+    }
+    .card {
+      background: var(--card, #18181b);
+      border: 1px solid var(--border, #27272a);
+      border-radius: 0.5rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border, #27272a);
+      padding-bottom: 0.5rem;
+    }
+    .kv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.75rem;
+    }
+    .kv {
+      background: var(--muted, #27272a);
+      border-radius: 0.375rem;
+      padding: 0.5rem 0.75rem;
+    }
+    .kv .k {
+      font-size: 0.7rem;
+      color: var(--muted-foreground, #a1a1aa);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .kv .v {
+      font-size: 0.9rem;
+      margin-top: 0.2rem;
+      word-break: break-all;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: var(--muted, #27272a);
+      color: var(--muted-foreground, #a1a1aa);
+      margin-right: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+    .badge.running { background: #16a34a; color: #fff; }
+    .badge.sleeping { background: #d97706; color: #fff; }
+    .badge.error { background: #dc2626; color: #fff; }
+    .badge.zero-gpu { background: #16a34a; color: #fff; }
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border, #27272a);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    thead { background: var(--muted, #27272a); }
+    th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      font-weight: 600;
+      color: var(--muted-foreground, #a1a1aa);
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.5rem 0.75rem;
+      border-top: 1px solid var(--border, #27272a);
+      vertical-align: top;
+    }
+    tr:hover td { background: rgba(59, 130, 246, 0.05); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .empty { text-align: center; padding: 2rem 1rem; color: var(--muted-foreground, #a1a1aa); }
+    .loading { text-align: center; padding: 2rem 1rem; color: var(--muted-foreground, #a1a1aa); }
+    .error-banner {
+      background: #dc2626; color: #fff; padding: 0.75rem 1rem;
+      border-radius: 0.5rem; margin-bottom: 1rem; font-size: 0.875rem;
+    }
+    .diff-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .diff-controls select {
+      padding: 0.4rem 0.6rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--border, #27272a);
+      background: var(--input, #18181b);
+      color: var(--foreground, #fafafa);
+      font-size: 0.8rem;
+      max-width: 260px;
+    }
+    .diff-controls label {
+      font-size: 0.8rem;
+      color: var(--muted-foreground, #a1a1aa);
+    }
+    .diff-table td.diff-added { background: rgba(22, 163, 74, 0.15); }
+    .diff-table td.diff-removed { background: rgba(220, 38, 38, 0.15); }
+    .diff-table td.diff-changed { background: rgba(217, 119, 6, 0.15); }
+    .diff-arrow { color: var(--muted-foreground, #a1a1aa); }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+    .tag {
+      background: var(--muted, #27272a);
+      border-radius: 9999px;
+      padding: 0.1rem 0.5rem;
+      font-size: 0.7rem;
+      color: var(--muted-foreground, #a1a1aa);
+    }
+  </style>
+</head>
+
+<body class="bg-background text-foreground min-h-screen">
+  <div class="detail-container">
+    <div class="detail-header">
+      <div>
+        <h1 id="entityTitle">Loading...</h1>
+        <p id="entitySubtitle" class="text-sm text-muted-foreground mt-1"></p>
+      </div>
+      <a href="catalog.html" class="back-link">← Back to Catalog</a>
+    </div>
+
+    <div id="errorBanner" class="error-banner hidden"></div>
+
+    <!-- Latest data -->
+    <div class="card">
+      <h2>Latest Data</h2>
+      <div id="latestData" class="loading">Loading...</div>
+    </div>
+
+    <!-- History -->
+    <div class="card">
+      <h2>History (from previous syncs)</h2>
+      <div id="historyTable" class="loading">Loading...</div>
+    </div>
+
+    <!-- Diff view -->
+    <div class="card">
+      <h2>Diff View</h2>
+      <div class="diff-controls">
+        <label>From:
+          <select id="diffFrom"></select>
+        </label>
+        <label>To:
+          <select id="diffTo"></select>
+        </label>
+      </div>
+      <div id="diffView" class="empty">Select two syncs to compare.</div>
+    </div>
+  </div>
+
+  <script type="module">
+    // --- Config ---
+    const API_BASE = localStorage.getItem('hfCatalogApiBase') || 'http://localhost:8787';
+
+    // --- Parse query params ---
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('type') || 'model'; // 'model' or 'space'
+    const id = params.get('id') || '';
+    const modality = params.get('modality') || '';
+
+    // --- DOM refs ---
+    const $ = (id) => document.getElementById(id);
+    const errorBanner = $('errorBanner');
+    const entityTitle = $('entityTitle');
+    const entitySubtitle = $('entitySubtitle');
+    const latestData = $('latestData');
+    const historyTable = $('historyTable');
+    const diffFrom = $('diffFrom');
+    const diffTo = $('diffTo');
+    const diffView = $('diffView');
+
+    // --- State ---
+    let history = [];
+
+    // --- Helpers ---
+    function showError(msg) {
+      errorBanner.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+    function clearError() {
+      errorBanner.classList.add('hidden');
+    }
+    function formatNumber(n) {
+      if (n === null || n === undefined) return '—';
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+      return String(n);
+    }
+    function formatDate(iso) {
+      if (!iso) return '—';
+      try {
+        return new Date(iso).toLocaleString();
+      } catch {
+        return iso;
+      }
+    }
+    // Build HTML entities at runtime so formatters can't corrupt them.
+    const AMP = String.fromCharCode(38);   // &
+    const LT = String.fromCharCode(60);    // <
+    const GT = String.fromCharCode(62);    // >
+    const QUOT = String.fromCharCode(34);  // "
+    const APOS = String.fromCharCode(39);  // '
+    const HTML_ENTITIES = {
+      [AMP]: AMP + 'amp;',
+      [LT]: LT + 'lt;',
+      [GT]: GT + 'gt;',
+      [QUOT]: QUOT + 'quot;',
+      [APOS]: APOS + '#39;'
+    };
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/[&<>"']/g, (ch) => HTML_ENTITIES[ch]);
+    }
+    function tagsHtml(tagsStr) {
+      if (!tagsStr) return '—';
+      return '<div class="tag-list">' + tagsStr.split(',').map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('') + '</div>';
+    }
+    function rankBadge(r) {
+      if (r.status === 'dropped') return '<span class="badge error">dropped</span>';
+      if (r.rank) return `<span class="badge">#${r.rank}</span>`;
+      return '—';
+    }
+
+    async function fetchJson(path) {
+      const res = await fetch(`${API_BASE}${path}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    }
+
+    // --- Render latest data ---
+    function renderLatest(data) {
+      const isModel = type === 'model';
+      const kv = (k, v) => `<div class="kv"><div class="k">${escapeHtml(k)}</div><div class="v">${v}</div></div>`;
+
+      let html = '<div class="kv-grid">';
+      html += kv('ID', escapeHtml(data.id));
+      html += kv('Modality', escapeHtml(data.modality || '—'));
+      html += kv('Status', rankBadge(data));
+      html += kv('Rank', data.rank ? `#${data.rank}` : '—');
+      html += kv('Prev Rank', data.prev_rank ? `#${data.prev_rank}` : '—');
+      html += kv('Likes', formatNumber(data.likes));
+      html += kv('Downloads', formatNumber(data.downloads));
+      if (isModel) {
+        html += kv('Trending', data.trending_score != null ? Number(data.trending_score).toFixed(1) : '—');
+        html += kv('Pipeline', escapeHtml(data.pipeline_tag || '—'));
+        html += kv('Library', escapeHtml(data.library_name || '—'));
+        html += kv('Created', escapeHtml(formatDate(data.created_at)));
+        html += kv('Providers', escapeHtml(data.inference_providers || '—'));
+        html += kv('Tags', tagsHtml(data.tags));
+      } else {
+        html += kv('Title', escapeHtml(data.title || '—'));
+        html += kv('SDK', escapeHtml(data.sdk || '—'));
+        html += kv('Hardware', escapeHtml(data.hardware || '—'));
+        html += kv('Stage', escapeHtml(data.stage || '—'));
+        html += kv('Host', escapeHtml(data.host || '—'));
+        html += kv('Model', escapeHtml(data.model_id || '—'));
+        html += kv('Models', escapeHtml(data.models || '—'));
+      }
+      html += kv('Updated', escapeHtml(formatDate(data.updated_at)));
+      html += '</div>';
+      latestData.innerHTML = html;
+    }
+
+    // --- Render history table ---
+    function renderHistory(rows) {
+      history = rows;
+      if (!rows.length) {
+        historyTable.innerHTML = '<div class="empty">No history recorded yet. Run a sync to populate snapshots.</div>';
+        return;
+      }
+      const isModel = type === 'model';
+      const headers = isModel
+        ? ['Synced At', 'Rank', 'Likes', 'Downloads', 'Trending', 'Library', 'Status']
+        : ['Synced At', 'Rank', 'Likes', 'Hardware', 'Stage', 'Model', 'Status'];
+
+      const thead = headers.map(h => `<th>${escapeHtml(h)}</th>`).join('');
+      const tbody = rows.map(r => {
+        if (isModel) {
+          return `<tr>
+            <td class="text-xs text-muted-foreground">${escapeHtml(formatDate(r.synced_at))}</td>
+            <td>${rankBadge(r)}</td>
+            <td class="num">${formatNumber(r.likes)}</td>
+            <td class="num">${formatNumber(r.downloads)}</td>
+            <td class="num">${r.trending_score != null ? Number(r.trending_score).toFixed(1) : '—'}</td>
+            <td class="text-xs text-muted-foreground">${escapeHtml(r.library_name || '—')}</td>
+            <td>${rankBadge(r)}</td>
+          </tr>`;
+        }
+        return `<tr>
+          <td class="text-xs text-muted-foreground">${escapeHtml(formatDate(r.synced_at))}</td>
+          <td>${rankBadge(r)}</td>
+          <td class="num">${formatNumber(r.likes)}</td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(r.hardware || '—')}</td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(r.stage || '—')}</td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(r.model_id || '—')}</td>
+          <td>${rankBadge(r)}</td>
+        </tr>`;
+      }).join('');
+
+      historyTable.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead><tr>${thead}</tr></thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+      `;
+
+      // Populate diff selects (newest first)
+      diffFrom.innerHTML = rows.map((r, i) => `<option value="${i}">${escapeHtml(formatDate(r.synced_at))}</option>`).join('');
+      diffTo.innerHTML = rows.map((r, i) => `<option value="${i}">${escapeHtml(formatDate(r.synced_at))}</option>`).join('');
+      if (rows.length >= 2) {
+        diffFrom.value = '1'; // second newest
+        diffTo.value = '0';   // newest
+        renderDiff();
+      }
+    }
+
+    // --- Render diff between two history entries ---
+    function renderDiff() {
+      const fromIdx = Number(diffFrom.value);
+      const toIdx = Number(diffTo.value);
+      if (isNaN(fromIdx) || isNaN(toIdx) || !history[fromIdx] || !history[toIdx]) {
+        diffView.innerHTML = '<div class="empty">Select two syncs to compare.</div>';
+        return;
+      }
+      const from = history[fromIdx];
+      const to = history[toIdx];
+
+      // Fields to compare
+      const fields = type === 'model'
+        ? ['likes', 'downloads', 'trending_score', 'rank', 'library_name', 'inference_providers', 'status']
+        : ['likes', 'rank', 'hardware', 'stage', 'model_id', 'status'];
+
+      const rows = fields.map(f => {
+        const a = from[f];
+        const b = to[f];
+        let cls = '';
+        let displayA = a;
+        let displayB = b;
+        if (String(a) !== String(b)) {
+          cls = 'diff-changed';
+        }
+        if (f === 'likes' || f === 'downloads' || f === 'trending_score') {
+          displayA = formatNumber(a);
+          displayB = formatNumber(b);
+        }
+        if (f === 'rank') {
+          displayA = a ? `#${a}` : '—';
+          displayB = b ? `#${b}` : '—';
+        }
+        return `<tr>
+          <td><strong>${escapeHtml(f)}</strong></td>
+          <td class="${cls}">${escapeHtml(displayA)}</td>
+          <td class="diff-arrow">→</td>
+          <td class="${cls}">${escapeHtml(displayB)}</td>
+        </tr>`;
+      }).join('');
+
+      diffView.innerHTML = `
+        <div class="table-wrap">
+          <table class="diff-table">
+            <thead><tr>
+              <th>Field</th>
+              <th>${escapeHtml(formatDate(from.synced_at))}</th>
+              <th></th>
+              <th>${escapeHtml(formatDate(to.synced_at))}</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // --- Init ---
+    async function init() {
+      clearError();
+      if (!id) {
+        showError('Missing required query parameter: id');
+        entityTitle.textContent = 'Error';
+        return;
+      }
+      entityTitle.textContent = id;
+      entitySubtitle.textContent = `${type === 'model' ? 'Model' : 'Space'} · ${modality || 'all modalities'}`;
+
+      const base = type === 'model' ? 'model' : 'space';
+      const q = modality ? `?modality=${encodeURIComponent(modality)}` : '';
+
+      try {
+        const [detail, hist] = await Promise.all([
+          fetchJson(`/api/${base}/${encodeURIComponent(id)}${q}`),
+          fetchJson(`/api/${base}/${encodeURIComponent(id)}/history${q}`)
+        ]);
+        renderLatest(detail);
+        renderHistory(hist);
+      } catch (err) {
+        showError(`Failed to load data: ${err.message}`);
+        latestData.innerHTML = '<div class="empty">No data available.</div>';
+        historyTable.innerHTML = '<div class="empty">No data available.</div>';
+      }
+    }
+
+    diffFrom.addEventListener('change', renderDiff);
+    diffTo.addEventListener('change', renderDiff);
+
+    init();
+  </script>
+</body>
+
+</html>

@@ -3,3 +3,17 @@ add other ai providers , not just openai.
 add cli AI agents : cline cli ..
 
 also openrouter / hugginface inference
+
+provide a function to smoke test if a space / inference endpoint is still working : in this way we have a way to ensure , and keep history of functional endpoints.
+keep dates of checks / also historize things in db like  when updating best models / endpoints etc.. we need to keep the history.  
+ also when juging best (sota / pareto compromise) models , it could be useful to have a proper structure in db to review vs what other model at the time, one model was selected as...
+
+
+
+
+ other function : 
+
+ as user is listening to a file , there should be a component on the page that allow the user to record an audio note saved  locally. this note is by default then linked to the timestamp  in the current played file . also if the audio of the listened content/media at the moment of the audio note has been transcribed, the note ref is also visible from the transcribe view , and linked with preceding (identified ) related context.
+
+
+ fix : login with huggingface not working (no visible action)

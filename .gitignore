@@ -13,3 +13,7 @@ test-results/
 **.pyc
 .venv
 dev-dist/
+huggingface-skill/db-sync/sync.log
+huggingface-skill/db-sync/hf_catalog.db
+huggingface-skill/db-sync/hf_catalog.db
+huggingface-skill/db-sync/hf_catalog.db

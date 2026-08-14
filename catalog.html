@@ -279,6 +279,7 @@
     <div class="tabs">
       <button id="tabModels" class="active">Models</button>
       <button id="tabSpaces">Spaces</button>
+      <button id="tabChanges">Changes</button>
       <button id="tabRecent">Recent Sync</button>
     </div>
 
@@ -321,6 +322,7 @@
     const applyBtn = $('applyBtn');
     const tabModels = $('tabModels');
     const tabSpaces = $('tabSpaces');
+    const tabChanges = $('tabChanges');
     const tabRecent = $('tabRecent');
     const tableContainer = $('tableContainer');
     const prevPage = $('prevPage');
@@ -431,6 +433,22 @@
     }
 
     // --- Rendering ---
+    function rankBadge(r) {
+      if (r.status === 'dropped') {
+        return '<span class="badge error">dropped</span>';
+      }
+      if (r.rank && r.prev_rank && r.prev_rank !== r.rank) {
+        if (r.rank < r.prev_rank) {
+          return `<span class="badge running">▲ ${r.prev_rank}→${r.rank}</span>`;
+        }
+        return `<span class="badge sleeping">▼ ${r.prev_rank}→${r.rank}</span>`;
+      }
+      if (r.rank) {
+        return `<span class="badge">#${r.rank}</span>`;
+      }
+      return '';
+    }
+
     function renderModels(rows) {
       if (!rows.length) {
         tableContainer.innerHTML = '<div class="empty">No models found.</div>';
@@ -438,9 +456,11 @@
       }
       const headers = [
         { key: 'id', label: 'Model' },
+        { key: 'rank', label: 'Rank' },
         { key: 'likes', label: 'Likes' },
         { key: 'downloads', label: 'Downloads' },
         { key: 'trending_score', label: 'Trending' },
+        { key: 'library_name', label: 'Library' },
         { key: 'inference_providers', label: 'Providers' },
         { key: 'updated_at', label: 'Updated' }
       ];
@@ -455,10 +475,12 @@
 
       const tbody = rows.map(r => `
         <tr>
-          <td class="model-id">${escapeHtml(r.id)}</td>
+          <td class="model-id"><a href="detail.html?type=model&id=${encodeURIComponent(r.id)}&modality=${encodeURIComponent(r.modality || '')}" class="text-primary hover:underline">${escapeHtml(r.id)}</a></td>
+          <td>${rankBadge(r)}</td>
           <td class="num">${formatNumber(r.likes)}</td>
           <td class="num">${formatNumber(r.downloads)}</td>
           <td class="num">${r.trending_score != null ? Number(r.trending_score).toFixed(1) : '—'}</td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(r.library_name || '—')}</td>
           <td class="providers">${escapeHtml(r.inference_providers || '—')}</td>
           <td class="text-xs text-muted-foreground">${escapeHtml(formatDate(r.updated_at))}</td>
         </tr>
@@ -499,13 +521,15 @@
         const stageClass = r.stage === 'RUNNING' ? 'running' : r.stage === 'SLEEPING' ? 'sleeping' : r.stage === 'RUNTIME_ERROR' ? 'error' : '';
         return `
         <tr>
-          <td class="model-id">${escapeHtml(r.id)}</td>
+          <td class="model-id"><a href="detail.html?type=space&id=${encodeURIComponent(r.id)}&modality=${encodeURIComponent(r.modality || '')}" class="text-primary hover:underline">${escapeHtml(r.id)}</a></td>
+          <td>${rankBadge(r)}</td>
           <td>${escapeHtml(r.title || '—')}</td>
           <td class="num">${formatNumber(r.likes)}</td>
           <td>
             ${r.hardware ? `<span class="badge ${hardwareClass}">${escapeHtml(r.hardware)}</span>` : ''}
             ${r.stage ? `<span class="badge ${stageClass}">${escapeHtml(r.stage)}</span>` : ''}
           </td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(r.model_id || '—')}</td>
           <td class="text-xs text-muted-foreground">${escapeHtml(r.host || '—')}</td>
           <td class="text-xs text-muted-foreground">${escapeHtml(formatDate(r.updated_at))}</td>
         </tr>
@@ -517,11 +541,61 @@
           <table>
             <thead><tr>
               <th>Space</th>
+              <th>Rank</th>
               <th>Title</th>
               <th>Likes</th>
               <th>Hardware / Stage</th>
+              <th>Model</th>
               <th>Host</th>
               <th>Updated</th>
+            </tr></thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderChanges(rows) {
+      if (!rows.length) {
+        tableContainer.innerHTML = '<div class="empty">No sync changes recorded yet. Run a sync to populate ranking history.</div>';
+        return;
+      }
+      const changeClass = {
+        added: 'running',
+        moved_up: 'running',
+        moved_down: 'sleeping',
+        updated: '',
+        dropped: 'error'
+      };
+      const tbody = rows.map(r => {
+        const cls = changeClass[r.change] || '';
+        const rankInfo = r.change === 'moved_up' || r.change === 'moved_down'
+          ? `${r.prev_rank} → ${r.rank}`
+          : (r.rank ? `#${r.rank}` : '—');
+        return `
+        <tr>
+          <td class="num">${r.id}</td>
+          <td>${escapeHtml(r.modality)}</td>
+          <td><span class="badge">${escapeHtml(r.type)}</span></td>
+          <td class="model-id">${escapeHtml(r.entity_id)}</td>
+          <td><span class="badge ${cls}">${escapeHtml(r.change)}</span></td>
+          <td class="num">${escapeHtml(rankInfo)}</td>
+          <td class="text-xs text-muted-foreground">${escapeHtml(formatDate(r.synced_at))}</td>
+        </tr>
+      `;
+      }).join('');
+
+      tableContainer.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th>
+              <th>Modality</th>
+              <th>Type</th>
+              <th>Entity</th>
+              <th>Change</th>
+              <th>Rank</th>
+              <th>Synced At</th>
             </tr></thead>
             <tbody>${tbody}</tbody>
           </table>
@@ -573,13 +647,17 @@
         } else if (state.tab === 'spaces') {
           rows = await fetchJson(`/api/spaces?${buildQuery()}`);
           renderSpaces(rows);
+        } else if (state.tab === 'changes') {
+          const q = state.modality ? `?modality=${encodeURIComponent(state.modality)}` : '';
+          rows = await fetchJson(`/api/changes${q}`);
+          renderChanges(rows);
         } else {
           rows = await fetchJson('/api/recent');
           renderRecent(rows);
         }
 
         // Pagination (only meaningful for models/spaces)
-        const isPaginated = state.tab !== 'recent';
+        const isPaginated = state.tab === 'models' || state.tab === 'spaces';
         prevPage.disabled = !isPaginated || state.page <= 1;
         nextPage.disabled = !isPaginated || rows.length < PAGE_SIZE;
         pageInfo.textContent = isPaginated ? `Page ${state.page}` : '';
@@ -595,12 +673,14 @@
       state.page = 1;
       tabModels.classList.toggle('active', tab === 'models');
       tabSpaces.classList.toggle('active', tab === 'spaces');
+      tabChanges.classList.toggle('active', tab === 'changes');
       tabRecent.classList.toggle('active', tab === 'recent');
       loadTable();
     }
 
     tabModels.addEventListener('click', () => setTab('models'));
     tabSpaces.addEventListener('click', () => setTab('spaces'));
+    tabChanges.addEventListener('click', () => setTab('changes'));
     tabRecent.addEventListener('click', () => setTab('recent'));
 
     applyBtn.addEventListener('click', () => {

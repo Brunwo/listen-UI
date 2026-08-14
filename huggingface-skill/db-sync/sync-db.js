@@ -101,7 +101,21 @@ const MODALITIES = [
   { name: 'table-question-answering', pipeline: 'table-question-answering', search: 'table question answering' }
 ];
 
-// --- Init DB schema ---
+// --- Helper: check if a column exists in a table ---
+function columnExists(table, column) {
+  const cols = sql(`PRAGMA table_info(${table});`);
+  return cols.includes(column);
+}
+
+// --- Helper: add a column if it doesn't exist ---
+function addColumnIfMissing(table, column, definition) {
+  if (!columnExists(table, column)) {
+    sql(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition};`);
+    console.log(`  [migration] added column ${table}.${column}`);
+  }
+}
+
+// --- Init DB schema (with migrations for existing DBs) ---
 function initDb() {
   sql(`
     CREATE TABLE IF NOT EXISTS models (
@@ -113,6 +127,11 @@ function initDb() {
       trending_score REAL,
       tags TEXT,
       inference_providers TEXT,
+      created_at TEXT,
+      library_name TEXT,
+      rank INTEGER,
+      prev_rank INTEGER,
+      status TEXT DEFAULT 'active',
       updated_at TEXT,
       PRIMARY KEY (id, modality)
     );
@@ -128,6 +147,10 @@ function initDb() {
       stage TEXT,
       host TEXT,
       models TEXT,
+      model_id TEXT,
+      rank INTEGER,
+      prev_rank INTEGER,
+      status TEXT DEFAULT 'active',
       updated_at TEXT,
       PRIMARY KEY (id, modality)
     );
@@ -141,7 +164,74 @@ function initDb() {
       synced_at TEXT
     );
   `);
+  sql(`
+    CREATE TABLE IF NOT EXISTS sync_changes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      modality TEXT,
+      type TEXT,
+      entity_id TEXT,
+      change TEXT,
+      rank INTEGER,
+      prev_rank INTEGER,
+      synced_at TEXT
+    );
+  `);
+  sql(`
+    CREATE TABLE IF NOT EXISTS model_history (
+      id TEXT,
+      modality TEXT,
+      synced_at TEXT,
+      pipeline_tag TEXT,
+      likes INTEGER,
+      downloads INTEGER,
+      trending_score REAL,
+      tags TEXT,
+      inference_providers TEXT,
+      created_at TEXT,
+      library_name TEXT,
+      rank INTEGER,
+      status TEXT,
+      PRIMARY KEY (id, modality, synced_at)
+    );
+  `);
+  sql(`
+    CREATE TABLE IF NOT EXISTS space_history (
+      id TEXT,
+      modality TEXT,
+      synced_at TEXT,
+      title TEXT,
+      sdk TEXT,
+      likes INTEGER,
+      hardware TEXT,
+      stage TEXT,
+      host TEXT,
+      models TEXT,
+      model_id TEXT,
+      rank INTEGER,
+      status TEXT,
+      PRIMARY KEY (id, modality, synced_at)
+    );
+  `);
+
+  // Migrations for existing DBs (add missing columns)
+  addColumnIfMissing('models', 'created_at', 'TEXT');
+  addColumnIfMissing('models', 'library_name', 'TEXT');
+  addColumnIfMissing('models', 'rank', 'INTEGER');
+  addColumnIfMissing('models', 'prev_rank', 'INTEGER');
+  addColumnIfMissing('models', 'status', "TEXT DEFAULT 'active'");
+  addColumnIfMissing('spaces', 'model_id', 'TEXT');
+  addColumnIfMissing('spaces', 'rank', 'INTEGER');
+  addColumnIfMissing('spaces', 'prev_rank', 'INTEGER');
+  addColumnIfMissing('spaces', 'status', "TEXT DEFAULT 'active'");
+
   console.log('DB initialized:', DB_PATH);
+}
+
+// --- Log a change to sync_changes ---
+function logChange(modality, type, entityId, change, rank, prevRank) {
+  const now = new Date().toISOString();
+  sql(`INSERT INTO sync_changes (modality, type, entity_id, change, rank, prev_rank, synced_at)
+       VALUES ('${esc(modality)}', '${esc(type)}', '${esc(entityId)}', '${esc(change)}', ${rank === null || rank === undefined ? 'NULL' : rank}, ${prevRank === null || prevRank === undefined ? 'NULL' : prevRank}, '${esc(now)}');`);
 }
 
 // --- Sync models for a modality ---
@@ -157,19 +247,67 @@ async function syncModels(modality) {
     for (const pm of providerModels) {
       providerMap[pm.id] = pm.inferenceProviderMapping || [];
     }
+
+    // Track which ids are present in this sync (for drop detection)
+    const syncedIds = new Set();
     let count = 0;
-    for (const m of models) {
+
+    for (let i = 0; i < models.length; i++) {
+      const m = models[i];
+      const rank = i + 1; // 1-based rank position
+      syncedIds.add(m.id);
+
       const providers = (providerMap[m.id] || [])
         .filter(p => p.status === 'live')
         .map(p => `${p.provider}:${p.providerId || p.provider_id || ''}`)
         .join(',');
       const tags = (m.tags || []).join(',');
       const now = new Date().toISOString();
-      const sqlQuery = `INSERT OR REPLACE INTO models (id, modality, pipeline_tag, likes, downloads, trending_score, tags, inference_providers, updated_at)
-           VALUES ('${esc(m.id)}', '${esc(modality.name)}', '${esc(m.pipeline_tag || modality.pipeline)}', ${m.likes || 0}, ${m.downloads || 0}, ${m.trendingScore || 0}, '${esc(tags)}', '${esc(providers)}', '${esc(now)}');`;
+
+      // Get previous rank for this entity (if it exists)
+      const prevRow = sql(`SELECT rank, status FROM models WHERE id='${esc(m.id)}' AND modality='${esc(modality.name)}';`);
+      let prevRank = null;
+      let prevStatus = null;
+      if (prevRow) {
+        const parts = prevRow.split('|');
+        prevRank = parts[0] ? Number(parts[0]) : null;
+        prevStatus = parts[1] || null;
+      }
+
+      const sqlQuery = `INSERT OR REPLACE INTO models (id, modality, pipeline_tag, likes, downloads, trending_score, tags, inference_providers, created_at, library_name, rank, prev_rank, status, updated_at)
+           VALUES ('${esc(m.id)}', '${esc(modality.name)}', '${esc(m.pipeline_tag || modality.pipeline)}', ${m.likes || 0}, ${m.downloads || 0}, ${m.trendingScore || 0}, '${esc(tags)}', '${esc(providers)}', '${esc(m.createdAt || '')}', '${esc(m.library_name || '')}', ${rank}, ${prevRank === null ? 'NULL' : prevRank}, 'active', '${esc(now)}');`;
       sql(sqlQuery);
+
+      // Store a historical snapshot for this sync
+      sql(`INSERT OR REPLACE INTO model_history (id, modality, synced_at, pipeline_tag, likes, downloads, trending_score, tags, inference_providers, created_at, library_name, rank, status)
+           VALUES ('${esc(m.id)}', '${esc(modality.name)}', '${esc(now)}', '${esc(m.pipeline_tag || modality.pipeline)}', ${m.likes || 0}, ${m.downloads || 0}, ${m.trendingScore || 0}, '${esc(tags)}', '${esc(providers)}', '${esc(m.createdAt || '')}', '${esc(m.library_name || '')}', ${rank}, 'active');`);
+
+      // Log change
+      if (prevRank === null) {
+        logChange(modality.name, 'models', m.id, 'added', rank, null);
+      } else if (prevRank !== rank) {
+        const change = rank < prevRank ? 'moved_up' : 'moved_down';
+        logChange(modality.name, 'models', m.id, change, rank, prevRank);
+      } else {
+        logChange(modality.name, 'models', m.id, 'updated', rank, prevRank);
+      }
+
       count++;
     }
+
+    // Detect dropped entities: present in DB for this modality but not in this sync
+    const existing = sql(`SELECT id FROM models WHERE modality='${esc(modality.name)}' AND status='active';`);
+    if (existing) {
+      for (const line of existing.split('\n')) {
+        const id = line.trim();
+        if (id && !syncedIds.has(id)) {
+          sql(`UPDATE models SET status='dropped', updated_at='${esc(new Date().toISOString())}' WHERE id='${esc(id)}' AND modality='${esc(modality.name)}';`);
+          logChange(modality.name, 'models', id, 'dropped', null, null);
+          console.log(`  models[${modality.name}]: dropped ${id}`);
+        }
+      }
+    }
+
     sql(`INSERT INTO sync_log (modality, type, count, synced_at) VALUES ('${esc(modality.name)}', 'models', ${count}, '${esc(new Date().toISOString())}');`);
     console.log(`  models[${modality.name}]: ${count} synced`);
   } catch (e) {
@@ -190,17 +328,65 @@ async function syncSpaces(modality) {
     for (const rs of runtimeSpaces) {
       runtimeMap[rs.id] = rs.runtime || {};
     }
+
+    // Track which ids are present in this sync (for drop detection)
+    const syncedIds = new Set();
     let count = 0;
-    for (const s of spaces) {
+
+    for (let i = 0; i < spaces.length; i++) {
+      const s = spaces[i];
+      const rank = i + 1; // 1-based rank position
+      syncedIds.add(s.id);
+
       const now = new Date().toISOString();
       const runtime = runtimeMap[s.id] || {};
       const hardware = typeof runtime.hardware === 'object' ? (runtime.hardware?.current || '') : (runtime.hardware || '');
       const host = runtime.domains?.[0]?.domain || '';
-      const sqlQuery = `INSERT OR REPLACE INTO spaces (id, modality, title, sdk, likes, hardware, stage, host, models, updated_at)
-           VALUES ('${esc(s.id)}', '${esc(modality.name)}', '${esc(s.title || '')}', '${esc(s.sdk || '')}', ${s.likes || 0}, '${esc(hardware)}', '${esc(runtime.stage || '')}', '${esc(host)}', '${esc((s.models || []).join(','))}', '${esc(now)}');`;
+
+      // Get previous rank for this entity (if it exists)
+      const prevRow = sql(`SELECT rank, status FROM spaces WHERE id='${esc(s.id)}' AND modality='${esc(modality.name)}';`);
+      let prevRank = null;
+      let prevStatus = null;
+      if (prevRow) {
+        const parts = prevRow.split('|');
+        prevRank = parts[0] ? Number(parts[0]) : null;
+        prevStatus = parts[1] || null;
+      }
+
+      const sqlQuery = `INSERT OR REPLACE INTO spaces (id, modality, title, sdk, likes, hardware, stage, host, models, model_id, rank, prev_rank, status, updated_at)
+           VALUES ('${esc(s.id)}', '${esc(modality.name)}', '${esc(s.title || '')}', '${esc(s.sdk || '')}', ${s.likes || 0}, '${esc(hardware)}', '${esc(runtime.stage || '')}', '${esc(host)}', '${esc((s.models || []).join(','))}', '${esc(s.modelId || '')}', ${rank}, ${prevRank === null ? 'NULL' : prevRank}, 'active', '${esc(now)}');`;
       sql(sqlQuery);
+
+      // Store a historical snapshot for this sync
+      sql(`INSERT OR REPLACE INTO space_history (id, modality, synced_at, title, sdk, likes, hardware, stage, host, models, model_id, rank, status)
+           VALUES ('${esc(s.id)}', '${esc(modality.name)}', '${esc(now)}', '${esc(s.title || '')}', '${esc(s.sdk || '')}', ${s.likes || 0}, '${esc(hardware)}', '${esc(runtime.stage || '')}', '${esc(host)}', '${esc((s.models || []).join(','))}', '${esc(s.modelId || '')}', ${rank}, 'active');`);
+
+      // Log change
+      if (prevRank === null) {
+        logChange(modality.name, 'spaces', s.id, 'added', rank, null);
+      } else if (prevRank !== rank) {
+        const change = rank < prevRank ? 'moved_up' : 'moved_down';
+        logChange(modality.name, 'spaces', s.id, change, rank, prevRank);
+      } else {
+        logChange(modality.name, 'spaces', s.id, 'updated', rank, prevRank);
+      }
+
       count++;
     }
+
+    // Detect dropped entities: present in DB for this modality but not in this sync
+    const existing = sql(`SELECT id FROM spaces WHERE modality='${esc(modality.name)}' AND status='active';`);
+    if (existing) {
+      for (const line of existing.split('\n')) {
+        const id = line.trim();
+        if (id && !syncedIds.has(id)) {
+          sql(`UPDATE spaces SET status='dropped', updated_at='${esc(new Date().toISOString())}' WHERE id='${esc(id)}' AND modality='${esc(modality.name)}';`);
+          logChange(modality.name, 'spaces', id, 'dropped', null, null);
+          console.log(`  spaces[${modality.name}]: dropped ${id}`);
+        }
+      }
+    }
+
     sql(`INSERT INTO sync_log (modality, type, count, synced_at) VALUES ('${esc(modality.name)}', 'spaces', ${count}, '${esc(new Date().toISOString())}');`);
     console.log(`  spaces[${modality.name}]: ${count} synced`);
   } catch (e) {
